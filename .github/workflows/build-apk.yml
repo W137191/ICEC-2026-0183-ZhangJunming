@@ -56,7 +56,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           TAG: apk-latest
         run: |
-          python - <<'PY'
+          python3 - <<'PY'
           import json, os, urllib.request, urllib.error
           repo = os.environ['GITHUB_REPOSITORY']
           token = os.environ['GH_TOKEN']
