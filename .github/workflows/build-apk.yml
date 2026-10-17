@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write   # 允许把编译错误日志回写仓库用于排查
+  contents: write   # 允许把编译错误日志回写仓库用于排查（正常成功时不触发）
 
 jobs:
   build:
@@ -39,10 +39,16 @@ jobs:
           gradle-version: '8.2'
 
       - name: 编译 Debug APK
-        continue-on-error: true
         run: gradle :app:assembleDebug --no-daemon --stacktrace 2>&1 | tee build.log
 
-      # 把完整编译日志回写仓库（[skip ci] 避免触发新的工作流），便于定位
+      - name: 上传 APK 产物
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-debug
+          path: app/build/outputs/apk/debug/app-debug.apk
+
+      # 保险：构建失败才把完整日志回写仓库（[skip ci] 避免死循环），便于定位
       - name: 回写编译错误日志
         if: failure()
         run: |
