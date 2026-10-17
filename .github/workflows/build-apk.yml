@@ -48,6 +48,18 @@ jobs:
           name: app-debug
           path: app/build/outputs/apk/debug/app-debug.apk
 
+      # 把 APK 提交进仓库（强制 add，绕过 *.apk 忽略），生成公开 raw 链接，免登录即可下载
+      - name: 提交 APK 到仓库（公开可下载，免登录）
+        if: success()
+        run: |
+          git config user.email "ci@users.noreply.github.com"
+          git config user.name "ci-bot"
+          mkdir -p 02-20Days-Challenge/src/BatteryHeatMonitor/release
+          cp 02-20Days-Challenge/src/BatteryHeatMonitor/app/build/outputs/apk/debug/app-debug.apk 02-20Days-Challenge/src/BatteryHeatMonitor/release/app-debug.apk
+          git add -f 02-20Days-Challenge/src/BatteryHeatMonitor/release/app-debug.apk
+          git commit -m "ci: 发布 app-debug.apk 到仓库（免登录下载）[skip ci]" || true
+          git push || true
+
       # 保险：构建失败才把完整日志回写仓库（[skip ci] 避免死循环），便于定位
       - name: 回写编译错误日志
         if: failure()
