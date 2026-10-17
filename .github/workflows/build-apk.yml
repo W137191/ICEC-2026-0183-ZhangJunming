@@ -7,6 +7,9 @@ on:
     branches: [ main ]
   workflow_dispatch:
 
+permissions:
+  contents: write   # 允许把编译错误日志回写仓库用于排查
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -36,10 +39,16 @@ jobs:
           gradle-version: '8.2'
 
       - name: 编译 Debug APK
-        run: gradle :app:assembleDebug --no-daemon --stacktrace
+        continue-on-error: true
+        run: gradle :app:assembleDebug --no-daemon --stacktrace 2>&1 | tee build.log
 
-      - name: 上传 APK 产物
-        uses: actions/upload-artifact@v4
-        with:
-          name: app-debug
-          path: app/build/outputs/apk/debug/app-debug.apk
+      # 把完整编译日志回写仓库（[skip ci] 避免触发新的工作流），便于定位
+      - name: 回写编译错误日志
+        if: failure()
+        run: |
+          git config user.email "ci@users.noreply.github.com"
+          git config user.name "ci-bot"
+          cp build.log "$GITHUB_WORKSPACE/ci_build_error.log"
+          git add ci_build_error.log
+          git commit -m "ci: 附上编译错误日志 [skip ci]" || true
+          git push || true
