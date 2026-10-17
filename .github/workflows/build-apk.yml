@@ -8,11 +8,14 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write   # 允许创建 Release 并上传 APK 附件
+  contents: write   # 允许创建 Release 并上传 APK 附件（需在仓库设置里开启工作流读写权限）
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
     steps:
       - name: Checkout 源码
         uses: actions/checkout@v5
@@ -23,8 +26,7 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      # GitHub runner 镜像已预装 Android SDK（ANDROID_HOME + 许可已接受），
-      # 不再使用 android-actions/setup-android@v3（在新镜像上会挂）。
+      # GitHub runner 镜像已预装 Android SDK（ANDROID_HOME + 许可已接受）
       - name: 确认 SDK 并补齐 platform-34 / build-tools
         run: |
           echo "ANDROID_HOME=$ANDROID_HOME"
@@ -38,16 +40,20 @@ jobs:
         with:
           gradle-version: '8.2'
 
-      - name: 编译 Debug APK
-        continue-on-error: true
-        run: gradle :app:assembleDebug --no-daemon --stacktrace 2>&1 | tee build.log
+      # 关键：必须 cd 到安卓工程目录（含 settings.gradle），并开启 pipefail 暴露真实退出码
+      - name: 编译 Debug APK（项目目录内执行）
+        working-directory: 02-20Days-Challenge/src/BatteryHeatMonitor
+        run: |
+          set -o pipefail
+          gradle :app:assembleDebug --no-daemon --stacktrace 2>&1 | tee build.log
 
-      - name: 上传 APK 产物（备用，需登录查看）
+      - name: 上传 APK 产物
         if: success()
         uses: actions/upload-artifact@v4
         with:
           name: app-debug
-          path: app/build/outputs/apk/debug/app-debug.apk
+          path: 02-20Days-Challenge/src/BatteryHeatMonitor/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error   # 找不到 APK 直接报错，不许"假成功"
 
       # 用 Release API 发布 APK（公开可下载，免登录；不依赖 git push）
       - name: 发布 APK 到 Release（公开下载，免登录）
@@ -89,17 +95,17 @@ jobs:
           url = f"https://uploads.github.com/repos/{repo}/releases/{rid}/assets?name=app-debug.apk"
           req = urllib.request.Request(url, data=data, headers={**hdr, "Content-Type": "application/vnd.android.package-archive"}, method="POST")
           urllib.request.urlopen(req).read()
-          print("RELEASE_OK", rid, len(data))
+          print("RELEASE_OK size=", len(data))
           PY
 
-      # 保险：构建失败才把完整日志回写仓库（[skip ci] 避免死循环），便于定位
+      # 保险：构建失败才回写完整日志（[skip ci] 避免死循环）
       - name: 回写编译错误日志
         if: failure()
         continue-on-error: true
         run: |
           git config user.email "ci@users.noreply.github.com"
           git config user.name "ci-bot"
-          cp build.log "$GITHUB_WORKSPACE/ci_build_error.log"
+          cp 02-20Days-Challenge/src/BatteryHeatMonitor/build.log "$GITHUB_WORKSPACE/ci_build_error.log"
           git add ci_build_error.log
           git commit -m "ci: 附上编译错误日志 [skip ci]" || true
           git push || true
