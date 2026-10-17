@@ -19,3 +19,16 @@ __pycache__/
 # ===== 大文件与临时文件 =====
 *.tmp
 *.log
+
+# ===== 安卓 / Gradle 构建产物（BatteryHeatMonitor） =====
+*.iml
+.gradle/
+local.properties
+.gradle/
+build/
+captures/
+.externalNativeBuild/
+.cxx/
+*.apk
+*.aab
+

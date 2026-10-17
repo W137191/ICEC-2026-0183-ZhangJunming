@@ -1,0 +1,18 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- 电池外壳 -->
+    <path
+        android:fillColor="#FF03DAC5"
+        android:pathData="M34,38 h36 a6,6 0 0 1 6,6 v20 a6,6 0 0 1 -6,6 h-36 a6,6 0 0 1 -6,-6 v-20 a6,6 0 0 1 6,-6 Z" />
+    <!-- 电池正极头 -->
+    <path
+        android:fillColor="#FF03DAC5"
+        android:pathData="M76,46 h6 a4,4 0 0 1 4,4 v8 a4,4 0 0 1 -4,4 h-6 Z" />
+    <!-- 内部电量（深色） -->
+    <path
+        android:fillColor="#FF0E1116"
+        android:pathData="M40,45 h18 v18 h-18 Z" />
+</vector>

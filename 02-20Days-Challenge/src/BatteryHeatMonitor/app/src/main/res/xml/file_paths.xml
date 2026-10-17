@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths>
+    <!-- 暴露 app 外部下载目录，供导出 CSV 的 FileProvider 分享使用 -->
+    <external-files-path
+        name="downloads"
+        path="Download" />
+</paths>

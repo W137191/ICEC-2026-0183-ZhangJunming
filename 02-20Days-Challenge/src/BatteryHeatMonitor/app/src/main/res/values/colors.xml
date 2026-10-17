@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+    <color name="bg">#FF0E1116</color>
+    <color name="panel">#FF1A2029</color>
+    <color name="accent">#FF03DAC5</color>
+    <color name="line_battery">#FF4FC3F7</color>
+    <color name="line_temp">#FFFF7043</color>
+    <color name="text_dim">#FF8A97A8</color>
+</resources>
