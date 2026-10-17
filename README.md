@@ -49,6 +49,6 @@ ICEC-2026-学号后四位-姓名拼音/
 ## 五、进度看板
 
 - [x] Step 0：GitHub 建仓与 Git 基础（仓库结构已就绪）
-- [ ] 阶段一：实地调研（01-Field-Discovery）
+- [ ] 阶段一：实地测评（01-Field-Discovery，选做课题 02/06，待采样）
 - [ ] 阶段二：20 天挑战（02-20Days-Challenge）
 - [ ] 阶段三：AI 协作记录归档（03-AI-Collaboration）
