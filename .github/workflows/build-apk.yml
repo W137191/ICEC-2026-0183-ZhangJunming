@@ -1,6 +1,6 @@
 name: Build Debug APK
 
-# 在 GitHub 云端自动把安卓源码编译成可安装的 app-debug.apk
+# 在 GitHub 云端自动把安卓源码编译成可安装的 app-debug.apk，并发布到 Release（公开下载，免登录）
 # 触发：推送到 main 时自动跑；也可在 Actions 页手动 Run workflow
 on:
   push:
@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write   # 允许把编译错误日志回写仓库用于排查（正常成功时不触发）
+  contents: write   # 允许创建 Release 并上传 APK 附件
 
 jobs:
   build:
@@ -39,30 +39,63 @@ jobs:
           gradle-version: '8.2'
 
       - name: 编译 Debug APK
+        continue-on-error: true
         run: gradle :app:assembleDebug --no-daemon --stacktrace 2>&1 | tee build.log
 
-      - name: 上传 APK 产物
+      - name: 上传 APK 产物（备用，需登录查看）
         if: success()
         uses: actions/upload-artifact@v4
         with:
           name: app-debug
           path: app/build/outputs/apk/debug/app-debug.apk
 
-      # 把 APK 提交进仓库（强制 add，绕过 *.apk 忽略），生成公开 raw 链接，免登录即可下载
-      - name: 提交 APK 到仓库（公开可下载，免登录）
+      # 用 Release API 发布 APK（公开可下载，免登录；不依赖 git push）
+      - name: 发布 APK 到 Release（公开下载，免登录）
         if: success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: apk-latest
         run: |
-          git config user.email "ci@users.noreply.github.com"
-          git config user.name "ci-bot"
-          mkdir -p 02-20Days-Challenge/src/BatteryHeatMonitor/release
-          cp 02-20Days-Challenge/src/BatteryHeatMonitor/app/build/outputs/apk/debug/app-debug.apk 02-20Days-Challenge/src/BatteryHeatMonitor/release/app-debug.apk
-          git add -f 02-20Days-Challenge/src/BatteryHeatMonitor/release/app-debug.apk
-          git commit -m "ci: 发布 app-debug.apk 到仓库（免登录下载）[skip ci]" || true
-          git push || true
+          python - <<'PY'
+          import json, os, urllib.request, urllib.error
+          repo = os.environ['GITHUB_REPOSITORY']
+          token = os.environ['GH_TOKEN']
+          tag = os.environ['TAG']
+          base = f"https://api.github.com/repos/{repo}"
+          hdr = {"Authorization": f"Bearer {token}",
+                 "Accept": "application/vnd.github+json",
+                 "X-GitHub-Api-Version": "2022-11-28"}
+          # 删除旧的 release 与标签引用（若存在）
+          try:
+              req = urllib.request.Request(f"{base}/releases/tags/{tag}", headers=hdr)
+              rel = json.load(urllib.request.urlopen(req))
+              urllib.request.urlopen(urllib.request.Request(f"{base}/releases/{rel['id']}", headers=hdr, method="DELETE"))
+          except urllib.error.HTTPError as e:
+              if e.code != 404: raise
+          try:
+              urllib.request.urlopen(urllib.request.Request(f"{base}/git/refs/tags/{tag}", headers=hdr, method="DELETE"))
+          except Exception:
+              pass
+          # 创建 release（自动建标签指向当前 commit）
+          body = json.dumps({"tag_name": tag, "name": "发热掉电监测 App（最新 APK）",
+                             "body": "自动构建的 debug APK，公开下载"}).encode()
+          rel = json.loads(urllib.request.urlopen(
+              urllib.request.Request(f"{base}/releases", data=body, headers=hdr, method="POST")).read())
+          rid = rel["id"]
+          # 上传 asset
+          apk = "02-20Days-Challenge/src/BatteryHeatMonitor/app/build/outputs/apk/debug/app-debug.apk"
+          with open(apk, "rb") as f:
+              data = f.read()
+          url = f"https://uploads.github.com/repos/{repo}/releases/{rid}/assets?name=app-debug.apk"
+          req = urllib.request.Request(url, data=data, headers={**hdr, "Content-Type": "application/vnd.android.package-archive"}, method="POST")
+          urllib.request.urlopen(req).read()
+          print("RELEASE_OK", rid, len(data))
+          PY
 
       # 保险：构建失败才把完整日志回写仓库（[skip ci] 避免死循环），便于定位
       - name: 回写编译错误日志
         if: failure()
+        continue-on-error: true
         run: |
           git config user.email "ci@users.noreply.github.com"
           git config user.name "ci-bot"
