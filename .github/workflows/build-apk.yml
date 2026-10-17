@@ -12,25 +12,31 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout 源码
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: 配置 JDK 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '17'
 
-      - name: 配置 Android SDK（接受许可 + 平台/构建工具）
-        uses: android-actions/setup-android@v3
+      # GitHub runner 镜像已预装 Android SDK（ANDROID_HOME + 许可已接受），
+      # 不再使用 android-actions/setup-android@v3（在新镜像上会挂）。
+      - name: 确认 SDK 并补齐 platform-34 / build-tools
+        run: |
+          echo "ANDROID_HOME=$ANDROID_HOME"
+          SDKM="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          if [ ! -x "$SDKM" ]; then SDKM="$(command -v sdkmanager || true)"; fi
+          yes | "$SDKM" --licenses >/dev/null 2>&1 || true
+          "$SDKM" --install "platforms;android-34" "build-tools;34.0.0" >/dev/null 2>&1 || true
 
-      - name: 确保 platform-34 与 build-tools 34.0.0
-        run: sdkmanager "platforms;android-34" "build-tools;34.0.0"
-
-      - name: 编译 Debug APK
+      - name: 安装 Gradle 8.2
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.2'
-          arguments: :app:assembleDebug
+
+      - name: 编译 Debug APK
+        run: gradle :app:assembleDebug --no-daemon --stacktrace
 
       - name: 上传 APK 产物
         uses: actions/upload-artifact@v4
