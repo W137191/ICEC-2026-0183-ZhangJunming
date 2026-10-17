@@ -35,10 +35,10 @@ git config --global user.email "你的常用邮箱"
 ## 四、在 GitHub 创建公开仓库
 
 1. 登录 github.com → 右上角 **+** → **New repository**
-2. Repository name 填：`ICEC-2026-学号后四位-姓名拼音`（与本地文件夹同名）
+2. Repository name 填：`ICEC-2026-0183-ZhangJunming`（与本地文件夹同名）
 3. 可见性选 **Public**（课程要求公开）
 4. **不要**勾选 Add a README file（本地已有内容，勾了会产生冲突）
-5. Create repository → 复制仓库地址：`https://github.com/你的用户名/ICEC-2026-1234-ZhangSan.git`
+5. Create repository → 复制仓库地址：`https://github.com/W137191/ICEC-2026-0183-ZhangJunming.git`
 
 > 国内访问 GitHub 不稳定时，用 Gitee 平替：gitee.com → 右上角 **+** → 新建仓库 → 同名 → 公开 → 创建。后续命令里的地址换成 Gitee 的即可，其他操作完全一样。
 
@@ -47,8 +47,8 @@ git config --global user.email "你的常用邮箱"
 本仓库已经在本地初始化好了，你只需要：
 
 ```bash
-cd /d/zjm/ICEC-2026-XXXX-PinyinName        # 进入仓库（Git Bash 路径写法）
-git remote add origin https://github.com/你的用户名/ICEC-2026-1234-ZhangSan.git
+cd /d/zjm/ICEC-2026-0183-ZhangJunming        # 进入仓库（Git Bash 路径写法）
+git remote add origin https://github.com/W137191/ICEC-2026-0183-ZhangJunming.git
 git push -u origin main
 ```
 
