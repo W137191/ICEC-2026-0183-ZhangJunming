@@ -175,8 +175,15 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        registerReceiver(batteryReceiver, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
-        registerReceiver(sampleReceiver, IntentFilter(MonitorService.ACTION_NEW_SAMPLE))
+        // Android 14+ 必须显式声明接收器是否导出，否则 registerReceiver 抛 IllegalArgumentException 直接崩
+        ContextCompat.registerReceiver(
+            this, batteryReceiver, IntentFilter(Intent.ACTION_BATTERY_CHANGED),
+            ContextCompat.RECEIVER_NOT_EXPORTED
+        )
+        ContextCompat.registerReceiver(
+            this, sampleReceiver, IntentFilter(MonitorService.ACTION_NEW_SAMPLE),
+            ContextCompat.RECEIVER_NOT_EXPORTED
+        )
     }
 
     override fun onPause() {

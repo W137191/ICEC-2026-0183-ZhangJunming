@@ -15,6 +15,7 @@ import android.os.HandlerThread
 import android.os.IBinder
 import android.os.PowerManager
 import androidx.core.app.NotificationCompat
+import androidx.core.content.ContextCompat
 import com.example.batteryheatmonitor.monitor.ManualTempProvider
 import com.example.batteryheatmonitor.monitor.SystemBatteryTempProvider
 import com.example.batteryheatmonitor.monitor.TemperatureProvider
@@ -105,7 +106,10 @@ class MonitorService : Service() {
     }
 
     private fun readBattery(): Pair<Int, Boolean> {
-        val intent = registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED)) ?: return 0 to false
+        val intent = ContextCompat.registerReceiver(
+            this, null, IntentFilter(Intent.ACTION_BATTERY_CHANGED),
+            ContextCompat.RECEIVER_NOT_EXPORTED
+        ) ?: return 0 to false
         val level = intent.getIntExtra(BatteryManager.EXTRA_LEVEL, -1)
         val scale = intent.getIntExtra(BatteryManager.EXTRA_SCALE, -1)
         val pct = if (level >= 0 && scale > 0) (level * 100 / scale) else 0
