@@ -15,7 +15,20 @@ android {
         versionName "1.0"
     }
 
+    signingConfigs {
+        debug {
+            // 统一 debug 签名：云端每次构建都用同一把密钥，手机上可直接覆盖安装，不必反复卸载
+            storeFile file("debug.keystore")
+            storePassword "android"
+            keyAlias "bhm"
+            keyPassword "android"
+        }
+    }
+
     buildTypes {
+        debug {
+            signingConfig signingConfigs.debug
+        }
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'

@@ -40,6 +40,19 @@ jobs:
         with:
           gradle-version: '8.2'
 
+      # 统一 debug 签名：本地没有就临时生成一把（用 JAVA_HOME 里的 keytool），保证云端每次构建签名一致
+      - name: 生成统一 debug 签名（若不存在）
+        working-directory: 02-20Days-Challenge/src/BatteryHeatMonitor
+        run: |
+          if [ ! -f app/debug.keystore ]; then
+            "$JAVA_HOME/bin/keytool" -genkeypair -v -keystore app/debug.keystore -alias bhm \
+              -keyalg RSA -keysize 2048 -validity 10000 -storepass android -keypass android \
+              -dname "CN=BatteryHeatMonitor,OU=Debug,O=ZJM,L=Shenzhen,ST=Guangdong,C=CN" >/dev/null 2>&1
+            echo "keystore generated"
+          else
+            echo "keystore exists"
+          fi
+
       # 关键：必须 cd 到安卓工程目录（含 settings.gradle），并开启 pipefail 暴露真实退出码
       - name: 编译 Debug APK（项目目录内执行）
         working-directory: 02-20Days-Challenge/src/BatteryHeatMonitor
@@ -54,6 +67,20 @@ jobs:
           name: app-debug
           path: 02-20Days-Challenge/src/BatteryHeatMonitor/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error   # 找不到 APK 直接报错，不许"假成功"
+
+      # 把生成的统一签名固化进仓库：后续构建 checkout 到同一把密钥，手机可直接覆盖安装
+      - name: 固化 debug 签名密钥
+        if: success()
+        continue-on-error: true
+        run: |
+          git config user.email "ci@users.noreply.github.com"
+          git config user.name "ci-bot"
+          KEY=02-20Days-Challenge/src/BatteryHeatMonitor/app/debug.keystore
+          if [ ! -f "$KEY" ]; then echo "no keystore"; exit 0; fi
+          if git ls-files --error-unmatch "$KEY" >/dev/null 2>&1; then echo "already tracked"; exit 0; fi
+          git add "$KEY"
+          git commit -m "ci: 固化统一 debug 签名密钥（免重复卸载重装）[skip ci]" || true
+          git push || true
 
       # 用 Release API 发布 APK（公开可下载，免登录；不依赖 git push）
       - name: 发布 APK 到 Release（公开下载，免登录）
