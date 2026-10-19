@@ -8,6 +8,7 @@ import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.content.SharedPreferences
 import android.os.BatteryManager
 import android.os.Build
 import android.os.Handler
@@ -26,6 +27,12 @@ import java.util.concurrent.atomic.AtomicLong
 /**
  * 前台采样服务：让监测在熄屏 / 切到其它 App（刷视频、打游戏）时持续进行。
  * 默认每 5 分钟采一条：电量% + 温度℃ + 充电状态，写入 SampleStore 并广播刷新界面。
+ *
+ * 关键修复（相较旧版）：
+ * 旧版唤醒锁带 10 分钟超时，超时释放后设备休眠，Handler 的周期回调被冻结，
+ * 导致只采到 0min 一条、之后 30 分钟都没有记录。
+ * 新版改为「监测期间全程持有不超时唤醒锁」，保证周期内 CPU 不休眠、回调按时触发；
+ * 会话起点与参数持久化到 SharedPreferences，服务被系统重建后 elapsedMin 不归零。
  */
 class MonitorService : Service() {
 
@@ -35,6 +42,12 @@ class MonitorService : Service() {
         const val EXTRA_MANUAL_TEMP = "manual_temp" // 用 -1f 表示未设置
         const val ACTION_NEW_SAMPLE = "com.example.batteryheatmonitor.NEW_SAMPLE"
         const val CHANNEL_ID = "battery_monitor"
+
+        private const val PREFS = "monitor_session"
+        private const val KEY_START = "start_ts"
+        private const val KEY_SCENARIO = "scenario"
+        private const val KEY_INTERVAL = "interval_ms"
+        private const val KEY_MANUAL = "manual_temp"
     }
 
     private var thread: HandlerThread? = null
@@ -54,17 +67,53 @@ class MonitorService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        scenario = intent?.getStringExtra(EXTRA_SCENARIO) ?: "待机"
-        intervalMs = intent?.getLongExtra(EXTRA_INTERVAL_MS, 5 * 60 * 1000L) ?: 5 * 60 * 1000L
-        val manual = intent?.getFloatExtra(EXTRA_MANUAL_TEMP, -1f) ?: -1f
+        val prefs = getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+
+        // 读取参数：优先用本次启动传入的，否则（服务被系统重建、intent 为空）从持久化恢复
+        val freshStart = intent?.hasExtra(EXTRA_SCENARIO) == true
+        scenario = if (freshStart) {
+            intent!!.getStringExtra(EXTRA_SCENARIO) ?: "待机"
+        } else {
+            prefs.getString(KEY_SCENARIO, "待机") ?: "待机"
+        }
+        intervalMs = if (freshStart) {
+            intent!!.getLongExtra(EXTRA_INTERVAL_MS, 5 * 60 * 1000L)
+        } else {
+            prefs.getLong(KEY_INTERVAL, 5 * 60 * 1000L)
+        }
+        val manual = if (freshStart) {
+            intent!!.getFloatExtra(EXTRA_MANUAL_TEMP, -1f)
+        } else {
+            prefs.getFloat(KEY_MANUAL, -1f)
+        }
         provider = if (manual >= 0f) ManualTempProvider(manual) else SystemBatteryTempProvider()
-        startTimestamp = System.currentTimeMillis()
+
+        // 全新开始时记录真实起点；重建时沿用旧起点，保证 elapsedMin 连续
+        startTimestamp = if (freshStart) {
+            System.currentTimeMillis().also { prefs.edit().putLong(KEY_START, it).apply() }
+        } else {
+            prefs.getLong(KEY_START, System.currentTimeMillis())
+        }
+        prefs.edit()
+            .putString(KEY_SCENARIO, scenario)
+            .putLong(KEY_INTERVAL, intervalMs)
+            .putFloat(KEY_MANUAL, manual)
+            .apply()
+
+        // 序号从已存记录的最大值续接，避免服务重建后 id 冲突
+        seq.set(SampleStore.loadAll(this).maxOfOrNull { it.id } ?: 0)
 
         startForeground(1, buildNotification("监测中：$scenario"))
 
+        // 全程持有不超时唤醒锁：监测期间 CPU 不休眠，周期回调才能按时触发
         val pm = getSystemService(Context.POWER_SERVICE) as PowerManager
-        wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "BatteryHeatMonitor::monitor")
-        wakeLock?.acquire(intervalMs * 2)
+        wakeLock = pm.newWakeLock(
+            PowerManager.PARTIAL_WAKE_LOCK,
+            "BatteryHeatMonitor::monitor"
+        ).apply {
+            setReferenceCounted(false)
+            acquire()
+        }
 
         thread = HandlerThread("MonitorThread").also { it.start() }
         handler = Handler(thread!!.looper)
@@ -75,8 +124,6 @@ class MonitorService : Service() {
     }
 
     private fun scheduleNext() {
-        // 每个周期续期唤醒锁，保证长时段（如 30 分钟待机）熄屏时也能按时采样
-        wakeLock?.acquire(intervalMs * 2)
         handler?.postDelayed({
             sampleOnce()
             scheduleNext()
@@ -152,7 +199,9 @@ class MonitorService : Service() {
     override fun onDestroy() {
         handler?.removeCallbacksAndMessages(null)
         thread?.quitSafely()
-        wakeLock?.release()
+        wakeLock?.let {
+            if (it.isHeld) it.release()
+        }
         stopForeground(true)
         super.onDestroy()
     }
