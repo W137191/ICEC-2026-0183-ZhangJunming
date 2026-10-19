@@ -93,6 +93,7 @@ class MainActivity : AppCompatActivity() {
                 if (!monitoring) {
                     selectedScenario = map[b.id]!!
                     paint()
+                    refreshList() // 切换工况后同步刷新图表与状态栏
                 } else {
                     Toast.makeText(this, "监测中不可切换工况，先停止", Toast.LENGTH_SHORT).show()
                 }
@@ -118,6 +119,20 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun startMonitoring() {
+        // 充电状态下测"掉电"会失真（电量可能不降反升），开测前检查并提醒
+        val filter = IntentFilter(Intent.ACTION_BATTERY_CHANGED)
+        val sticky = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            registerReceiver(null, filter, Context.RECEIVER_NOT_EXPORTED)
+        } else {
+            @Suppress("DEPRECATION")
+            registerReceiver(null, filter)
+        }
+        val charging = sticky?.getIntExtra(BatteryManager.EXTRA_STATUS, -1)?.let {
+            it == BatteryManager.BATTERY_STATUS_CHARGING || it == BatteryManager.BATTERY_STATUS_FULL
+        } ?: false
+        if (charging) {
+            Toast.makeText(this, "⚠ 手机正在充电，掉电数据会失真，建议拔掉充电器再测", Toast.LENGTH_LONG).show()
+        }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
             ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
             != PackageManager.PERMISSION_GRANTED
@@ -160,17 +175,19 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun refreshList() {
-        val list = SampleStore.loadAll(this)
+        val all = SampleStore.loadAll(this)
+        // 图表只画当前选中工况，避免 4 种工况的曲线混在一张图里看不清
+        val list = all.filter { it.scenario == selectedScenario }
         chart.setSamples(list)
         val sdf = SimpleDateFormat("HH:mm:ss", Locale.CHINA)
         listSamples.adapter = ArrayAdapter(
             this, android.R.layout.simple_list_item_1,
-            list.map {
-                "${it.elapsedMin}min | ${it.batteryPct}% | ${String.format("%.1f", it.tempC)}℃ | ${sdf.format(Date(it.timestamp))}"
+            all.map {
+                "${it.scenario} ${it.elapsedMin}min | ${it.batteryPct}% | ${String.format("%.1f", it.tempC)}℃ | ${sdf.format(Date(it.timestamp))}"
             }
         )
-        tvStatus.text = if (monitoring) "监测中 · 工况：$selectedScenario · 已采样 ${list.size} 条"
-        else "未开始 · 共 ${list.size} 条"
+        tvStatus.text = if (monitoring) "监测中 · 工况：$selectedScenario · 本工况已采样 ${list.size} 条"
+        else "未开始 · 共 ${all.size} 条（当前工况 ${list.size} 条）"
     }
 
     override fun onResume() {
