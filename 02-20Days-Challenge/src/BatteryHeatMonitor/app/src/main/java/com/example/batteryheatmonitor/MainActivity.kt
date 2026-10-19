@@ -27,7 +27,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var tvCharging: TextView
     private lateinit var tvStatus: TextView
     private lateinit var chart: LineChartView
-    private lateinit var listSamples: ListView
+    private lateinit var listSamples: TextView
     private lateinit var etManualTemp: EditText
     private lateinit var btnStartStop: Button
 
@@ -180,12 +180,9 @@ class MainActivity : AppCompatActivity() {
         val list = all.filter { it.scenario == selectedScenario }
         chart.setSamples(list)
         val sdf = SimpleDateFormat("HH:mm:ss", Locale.CHINA)
-        listSamples.adapter = ArrayAdapter(
-            this, android.R.layout.simple_list_item_1,
-            all.map {
-                "${it.scenario} ${it.elapsedMin}min | ${it.batteryPct}% | ${String.format("%.1f", it.tempC)}℃ | ${sdf.format(Date(it.timestamp))}"
-            }
-        )
+        listSamples.text = all.joinToString("\n") {
+            "${it.scenario} ${it.elapsedMin}min | ${it.batteryPct}% | ${String.format("%.1f", it.tempC)}℃ | ${sdf.format(Date(it.timestamp))}"
+        }
         tvStatus.text = if (monitoring) "监测中 · 工况：$selectedScenario · 本工况已采样 ${list.size} 条"
         else "未开始 · 共 ${all.size} 条（当前工况 ${list.size} 条）"
     }

@@ -235,12 +235,15 @@
             android:textSize="15sp"
             android:textStyle="bold" />
 
-        <ListView
+        <TextView
             android:id="@+id/listSamples"
             android:layout_width="match_parent"
-            android:layout_height="240dp"
+            android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:background="@color/panel" />
+            android:background="@color/panel"
+            android:padding="10dp"
+            android:textColor="@color/white"
+            android:textSize="13sp" />
 
         <!-- 导出 / 清空 -->
         <LinearLayout
