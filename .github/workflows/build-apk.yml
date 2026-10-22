@@ -125,6 +125,31 @@ jobs:
           print("RELEASE_OK size=", len(data))
           PY
 
+      # 构建成功时清理调试用的错误日志 Release（仅失败时创建），保持仓库清爽
+      - name: 清理调试Release
+        if: success()
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ci-build-log
+        run: |
+          python3 - <<'PY'
+          import os, json, urllib.request, urllib.error
+          repo = os.environ['GITHUB_REPOSITORY']
+          token = os.environ['GH_TOKEN']
+          tag = os.environ['TAG']
+          base = f"https://api.github.com/repos/{repo}"
+          hdr = {"Authorization": f"Bearer {token}", "Accept": "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28"}
+          try:
+              req = urllib.request.Request(f"{base}/releases/tags/{tag}", headers=hdr)
+              rel = json.load(urllib.request.urlopen(req))
+              urllib.request.urlopen(urllib.request.Request(f"{base}/releases/{rel['id']}", headers=hdr, method="DELETE"))
+              print("CLEANUP_OK")
+          except urllib.error.HTTPError as e:
+              if e.code == 404: print("no debug release to clean")
+              else: raise
+          PY
+
       # 保险：构建失败把错误日志写到公开 Release（公开页面可被 WebFetch 读到，写 Release 的 token 与发布 APK 同源）
       - name: 公开错误日志(Release)
         if: failure()
