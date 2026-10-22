@@ -3,6 +3,7 @@ package com.example.batteryheatmonitor.sensing
 import android.Manifest
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.hardware.Sensor
 import android.hardware.SensorEvent
@@ -209,7 +210,7 @@ class SensingActivity : AppCompatActivity() {
 
     private fun readBattery(): Pair<Int, Float> {
         val intent = ContextCompat.registerReceiver(
-            this, null, Intent(Intent.ACTION_BATTERY_CHANGED), ContextCompat.RECEIVER_NOT_EXPORTED
+            this, null, IntentFilter(Intent.ACTION_BATTERY_CHANGED), ContextCompat.RECEIVER_NOT_EXPORTED
         )
         val level = intent?.getIntExtra(BatteryManager.EXTRA_LEVEL, -1) ?: -1
         val scale = intent?.getIntExtra(BatteryManager.EXTRA_SCALE, -1) ?: -1
