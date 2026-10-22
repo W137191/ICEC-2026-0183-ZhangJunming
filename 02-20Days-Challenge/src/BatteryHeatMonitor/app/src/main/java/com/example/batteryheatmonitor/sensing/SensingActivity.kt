@@ -97,7 +97,9 @@ class SensingActivity : AppCompatActivity() {
     }
 
     private fun outDir(): File {
-        val d = File(getExternalFilesDir(android.os.Environment.DIRECTORY_DOWNLOADS), "Sensing")
+        // getExternalFilesDir 在外部存储不可用时返回 null，需用 filesDir 兜底，否则返回类型为 File? 会编译失败
+        val base = getExternalFilesDir(android.os.Environment.DIRECTORY_DOWNLOADS) ?: filesDir
+        val d = File(base, "Sensing")
         d.mkdirs()
         return d
     }

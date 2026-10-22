@@ -132,7 +132,12 @@ jobs:
         run: |
           git config user.email "ci@users.noreply.github.com"
           git config user.name "ci-bot"
-          cp 02-20Days-Challenge/src/BatteryHeatMonitor/build.log "$GITHUB_WORKSPACE/ci_build_error.log"
+          SRC=02-20Days-Challenge/src/BatteryHeatMonitor/build.log
+          if [ -f "$SRC" ]; then
+            cp "$SRC" "$GITHUB_WORKSPACE/ci_build_error.log"
+          else
+            echo "build.log 未生成（可能在配置阶段即失败）" > "$GITHUB_WORKSPACE/ci_build_error.log"
+          fi
           git add ci_build_error.log
           git commit -m "ci: 附上编译错误日志 [skip ci]" || true
-          git push || true
+          git push origin "HEAD:refs/heads/main" || true
