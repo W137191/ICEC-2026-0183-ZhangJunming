@@ -258,8 +258,8 @@ class SensingActivity : AppCompatActivity() {
         val idx = indexFile(dir)
         val exists = idx.exists()
         val existing = if (exists) idx.readLines().drop(1).filter { it.isNotBlank() }.size else 0
-        // Kotlin 的 bufferedWriter() 没有 append 参数；已有文件时用 appendWriter() 追加，否则覆盖写
-        val writer = if (exists) idx.appendWriter() else idx.bufferedWriter()
+        // 用 Java FileWriter(file, append) 保证跨 Kotlin 版本可用；Kotlin 的 bufferedWriter/appendWriter 在不同 stdlib 版本行为不一
+        val writer = java.io.BufferedWriter(java.io.FileWriter(idx, exists))
         writer.use { w ->
             if (!exists) w.write("序号,工况,组号,日期,设备,条件,音频文件,加速度文件,电量%,温度℃,备注\n")
             val seq = existing + 1
