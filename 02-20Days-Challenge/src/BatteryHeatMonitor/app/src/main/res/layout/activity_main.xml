@@ -269,5 +269,16 @@
                 android:text="清空记录" />
         </LinearLayout>
 
+        <!-- 项目三：声振采集入口 -->
+        <Button
+            android:id="@+id/btnSensing"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:backgroundTint="@color/accent"
+            android:text="🎙 声振采集（项目三）"
+            android:textColor="@color/black"
+            android:textStyle="bold" />
+
     </LinearLayout>
 </ScrollView>

@@ -15,6 +15,7 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.example.batteryheatmonitor.model.Sample
 import com.example.batteryheatmonitor.storage.SampleStore
+import com.example.batteryheatmonitor.sensing.SensingActivity
 import com.example.batteryheatmonitor.ui.LineChartView
 import com.example.batteryheatmonitor.util.CsvExporter
 import java.text.SimpleDateFormat
@@ -72,6 +73,7 @@ class MainActivity : AppCompatActivity() {
         setupManualTemp()
         setupStartStop()
         setupExportClear()
+        setupSensingEntry()
         refreshList()
     }
 
@@ -159,6 +161,12 @@ class MainActivity : AppCompatActivity() {
         btnStartStop.text = "开始监测（每5分钟采样）"
         btnStartStop.setBackgroundColor(0xFF03DAC5.toInt())
         tvStatus.text = "已停止"
+    }
+
+    private fun setupSensingEntry() {
+        findViewById<Button>(R.id.btnSensing).setOnClickListener {
+            startActivity(Intent(this, SensingActivity::class.java))
+        }
     }
 
     private fun setupExportClear() {

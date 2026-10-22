@@ -9,6 +9,8 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <!-- 唤醒锁：熄屏时保持 CPU 运行以按时采样 -->
     <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <!-- 项目三声振采集：录制麦克风音频 -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
 
     <application
         android:allowBackup="true"
@@ -31,6 +33,12 @@
             android:name=".MonitorService"
             android:exported="false"
             android:foregroundServiceType="dataSync" />
+
+        <!-- 项目三：声振采集（手机麦克风 + 加速度计） -->
+        <activity
+            android:name=".sensing.SensingActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
 
         <!-- CSV 安全分享（避免直接暴露文件路径） -->
         <provider
