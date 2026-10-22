@@ -180,6 +180,19 @@ class MainActivity : AppCompatActivity() {
             refreshList()
             Toast.makeText(this, "记录已清空", Toast.LENGTH_SHORT).show()
         }
+        findViewById<Button>(R.id.btnRemoveLatest).setOnClickListener {
+            val removed = SampleStore.removeLatest(this)
+            if (removed == null) {
+                Toast.makeText(this, "没有可删除的记录", Toast.LENGTH_SHORT).show()
+            } else {
+                refreshList()
+                Toast.makeText(
+                    this,
+                    "已删除最新一条：${removed.scenario} ${removed.elapsedMin}min ${removed.batteryPct}%",
+                    Toast.LENGTH_LONG
+                ).show()
+            }
+        }
     }
 
     private fun refreshList() {
@@ -187,12 +200,13 @@ class MainActivity : AppCompatActivity() {
         // 图表只画当前选中工况，避免 4 种工况的曲线混在一张图里看不清
         val list = all.filter { it.scenario == selectedScenario }
         chart.setSamples(list)
-        val sdf = SimpleDateFormat("HH:mm:ss", Locale.CHINA)
+        val sdf = SimpleDateFormat("MM-dd HH:mm:ss", Locale.CHINA)
         listSamples.text = all.joinToString("\n") {
             "${it.scenario} ${it.elapsedMin}min | ${it.batteryPct}% | ${String.format("%.1f", it.tempC)}℃ | ${sdf.format(Date(it.timestamp))}"
         }
-        tvStatus.text = if (monitoring) "监测中 · 工况：$selectedScenario · 本工况已采样 ${list.size} 条"
-        else "未开始 · 共 ${all.size} 条（当前工况 ${list.size} 条）"
+        // 课题02 每工况目标 6 条（0/5/10/15/20/25/30min），进度可见才知何时采满
+        tvStatus.text = if (monitoring) "监测中 · 工况：$selectedScenario · 本工况 ${list.size}/6 条"
+        else "未开始 · 共 ${all.size} 条（当前工况 ${list.size}/6 条）"
     }
 
     override fun onResume() {

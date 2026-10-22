@@ -47,6 +47,7 @@ class SensingActivity : AppCompatActivity() {
     private lateinit var btnBack: Button
     private lateinit var tvCountdown: TextView
     private lateinit var tvResult: TextView
+    private lateinit var tvProgress: TextView
 
     private data class Cond(val 工况: String, val 设备: String, val 条件: String)
 
@@ -80,6 +81,7 @@ class SensingActivity : AppCompatActivity() {
         btnBack = findViewById(R.id.btnBack)
         tvCountdown = findViewById(R.id.tvCountdown)
         tvResult = findViewById(R.id.tvResult)
+        tvProgress = findViewById(R.id.tvProgress)
 
         spinner.adapter = ArrayAdapter(
             this, android.R.layout.simple_spinner_item, conds.map { it.工况 }
@@ -87,6 +89,7 @@ class SensingActivity : AppCompatActivity() {
         spinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(p: AdapterView<*>?, v: android.view.View?, pos: Int, id: Long) {
                 etGroup.setText(nextGroupFor(conds[pos]).toString())
+                refreshProgress()
             }
             override fun onNothingSelected(p: AdapterView<*>?) {}
         }
@@ -96,6 +99,15 @@ class SensingActivity : AppCompatActivity() {
         btnBack.setOnClickListener { finish() }
         btnShare.isEnabled = false
         etGroup.setText(nextGroupFor(conds[0]).toString())
+        refreshProgress()
+    }
+
+    /** 采集进度：当前工况 N/15 组、总计 M/75 组（对齐仓库 raw_data/采集记录索引.csv 目标） */
+    private fun refreshProgress() {
+        val idx = indexFile(outDir())
+        val lines = if (idx.exists()) idx.readLines().drop(1).filter { it.isNotBlank() } else emptyList()
+        val cur = lines.count { it.split(",").getOrNull(1) == conds[spinner.selectedItemPosition].工况 }
+        tvProgress.text = "当前工况已采 ${cur}/15 组 · 总计 ${lines.size}/75 组"
     }
 
     private fun outDir(): File {
@@ -208,6 +220,7 @@ class SensingActivity : AppCompatActivity() {
                 btnShare.isEnabled = true
                 tvCountdown.text = "完成"
                 tvResult.text = "已保存：\n${wavFile.absolutePath}\n${csvFile.absolutePath}"
+                refreshProgress()
             }
         }.start()
     }

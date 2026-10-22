@@ -44,6 +44,17 @@
             android:background="@color/panel"
             android:padding="8dp" />
 
+        <!-- 采集进度：当前工况 N/15 组 · 总计 M/75 组 -->
+        <TextView
+            android:id="@+id/tvProgress"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:text="当前工况已采 0/15 组 · 总计 0/75 组"
+            android:textColor="@color/line_temp"
+            android:textSize="13sp"
+            android:textStyle="bold" />
+
         <!-- 组号 -->
         <LinearLayout
             android:layout_width="match_parent"

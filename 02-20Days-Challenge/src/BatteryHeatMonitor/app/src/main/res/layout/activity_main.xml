@@ -245,7 +245,7 @@
             android:textColor="@color/white"
             android:textSize="13sp" />
 
-        <!-- 导出 / 清空 -->
+        <!-- 导出 / 清空 / 删最新 -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -259,6 +259,15 @@
                 android:layout_weight="1"
                 android:layout_marginEnd="4dp"
                 android:text="导出CSV" />
+
+            <Button
+                android:id="@+id/btnRemoveLatest"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="4dp"
+                android:layout_marginEnd="4dp"
+                android:text="删最新一条" />
 
             <Button
                 android:id="@+id/btnClear"

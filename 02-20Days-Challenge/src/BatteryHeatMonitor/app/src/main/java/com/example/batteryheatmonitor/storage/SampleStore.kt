@@ -50,6 +50,22 @@ object SampleStore {
         tmpFile(context).delete()
     }
 
+    /** 删除指定 id 的一条（误采补救） */
+    @Synchronized
+    fun remove(context: Context, id: Long) {
+        val list = loadAll(context).filter { it.id != id }
+        save(context, list)
+    }
+
+    /** 删除最新一条（时间戳最大者），返回被删记录便于提示；无记录返回 null */
+    @Synchronized
+    fun removeLatest(context: Context): Sample? {
+        val list = loadAll(context)
+        val latest = list.maxByOrNull { it.timestamp } ?: return null
+        save(context, list.filter { it.id != latest.id })
+        return latest
+    }
+
     private fun parseArray(text: String): List<Sample> {
         val arr = JSONArray(text)
         val list = mutableListOf<Sample>()

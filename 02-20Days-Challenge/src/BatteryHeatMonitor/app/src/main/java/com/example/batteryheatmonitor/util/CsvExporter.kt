@@ -7,6 +7,8 @@ import com.example.batteryheatmonitor.model.Sample
 import com.example.batteryheatmonitor.storage.SampleStore
 import androidx.core.content.FileProvider
 import java.io.File
+import java.text.SimpleDateFormat
+import java.util.*
 
 /**
  * 把采样记录导出为与课题02 raw_data 模板完全一致的 CSV：
@@ -22,10 +24,13 @@ object CsvExporter {
         val samples = SampleStore.loadAll(context)
         val sb = StringBuilder()
         sb.appendLine(HEADER)
+        val sdf = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.CHINA)
         samples.forEach {
+            // 列结构严格对齐课题02模板；测量时刻拼进备注列前缀，方便跨天数据回溯
+            val note = "${sdf.format(Date(it.timestamp))} ${it.note}".trim()
             sb.appendLine(
                 "${it.id},${csvCell(it.scenario)},${it.elapsedMin},${it.batteryPct}," +
-                        "${String.format("%.1f", it.tempC)},${csvCell(it.note)}"
+                        "${String.format("%.1f", it.tempC)},${csvCell(note)}"
             )
         }
         val dir = context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS) ?: context.filesDir
