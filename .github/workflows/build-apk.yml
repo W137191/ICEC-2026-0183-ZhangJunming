@@ -148,11 +148,16 @@ jobs:
                   log = f.read()
           except Exception:
               log = "(build.log 未生成——可能在配置/依赖解析阶段即失败)"
-          # 只保留「首个 Kotlin 报错 e: 」到「BUILD FAILED」之间的片段，那里才是真正的编译器错误
-          lines = log.splitlines()
-          start = next((i for i, l in enumerate(lines) if l.strip().startswith("e: ")), 0)
-          end = next((i for i, l in enumerate(lines) if "BUILD FAILED" in l), len(lines))
-          seg = "\n".join(lines[start:end + 1])
+          # 剥离 ANSI 颜色码（否则 e: 诊断行带 ESC 前缀无法匹配），再截取 compileDebugKotlin 任务失败前的诊断窗口
+          import re
+          clean = re.sub(r"\x1b\[[0-9;]*m", "", log)
+          lines = clean.splitlines()
+          end_idx = next((i for i, l in enumerate(lines)
+                          if "Execution failed for task" in l and "compileDebugKotlin" in l), None)
+          if end_idx is None:
+              end_idx = next((i for i, l in enumerate(lines) if "BUILD FAILED" in l), len(lines))
+          start_idx = max(0, end_idx - 80)
+          seg = "\n".join(lines[start_idx:end_idx + 4])
           if len(seg) > 12000:
               seg = "...(前面已省略)...\n" + seg[-12000:]
           log = seg
