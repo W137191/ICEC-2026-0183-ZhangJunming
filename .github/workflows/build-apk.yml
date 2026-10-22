@@ -125,19 +125,45 @@ jobs:
           print("RELEASE_OK size=", len(data))
           PY
 
-      # 保险：构建失败才回写完整日志（[skip ci] 避免死循环）
-      - name: 回写编译错误日志
+      # 保险：构建失败把错误日志写到公开 Release（公开页面可被 WebFetch 读到，写 Release 的 token 与发布 APK 同源）
+      - name: 公开错误日志(Release)
         if: failure()
         continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ci-build-log
         run: |
-          git config user.email "ci@users.noreply.github.com"
-          git config user.name "ci-bot"
-          SRC=02-20Days-Challenge/src/BatteryHeatMonitor/build.log
-          if [ -f "$SRC" ]; then
-            cp "$SRC" "$GITHUB_WORKSPACE/ci_build_error.log"
-          else
-            echo "build.log 未生成（可能在配置阶段即失败）" > "$GITHUB_WORKSPACE/ci_build_error.log"
-          fi
-          git add ci_build_error.log
-          git commit -m "ci: 附上编译错误日志 [skip ci]" || true
-          git push origin "HEAD:refs/heads/main" || true
+          python3 - <<'PY'
+          import os, json, urllib.request, urllib.error
+          repo = os.environ['GITHUB_REPOSITORY']
+          token = os.environ['GH_TOKEN']
+          tag = os.environ['TAG']
+          base = f"https://api.github.com/repos/{repo}"
+          hdr = {"Authorization": f"Bearer {token}",
+                 "Accept": "application/vnd.github+json",
+                 "X-GitHub-Api-Version": "2022-11-28"}
+          src = "02-20Days-Challenge/src/BatteryHeatMonitor/build.log"
+          try:
+              with open(src, "r", encoding="utf-8", errors="replace") as f:
+                  log = f.read()
+          except Exception:
+              log = "(build.log 未生成——可能在配置/依赖解析阶段即失败)"
+          # 只保留最后 12000 字符，足以覆盖编译器报错
+          if len(log) > 12000:
+              log = "...(前面已省略)...\n" + log[-12000:]
+          body = json.dumps({"tag_name": tag, "name": "CI 构建错误日志(最新)",
+                             "body": "```\n" + log + "\n```"}).encode()
+          # 删除旧 release（若存在）
+          try:
+              req = urllib.request.Request(f"{base}/releases/tags/{tag}", headers=hdr)
+              rel = json.load(urllib.request.urlopen(req))
+              urllib.request.urlopen(urllib.request.Request(f"{base}/releases/{rel['id']}", headers=hdr, method="DELETE"))
+          except urllib.error.HTTPError as e:
+              if e.code != 404: raise
+          # 创建新 release（不含 APK 附件，仅文本）
+          try:
+              urllib.request.urlopen(urllib.request.Request(f"{base}/releases", data=body, headers=hdr, method="POST")).read()
+              print("RELEASE_LOG_OK")
+          except urllib.error.HTTPError as e:
+              print("RELEASE_LOG_FAIL", e.read().decode('utf-8','replace')[:500])
+          PY
