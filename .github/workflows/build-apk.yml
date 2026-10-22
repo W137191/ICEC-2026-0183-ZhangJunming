@@ -148,9 +148,14 @@ jobs:
                   log = f.read()
           except Exception:
               log = "(build.log 未生成——可能在配置/依赖解析阶段即失败)"
-          # 只保留最后 12000 字符，足以覆盖编译器报错
-          if len(log) > 12000:
-              log = "...(前面已省略)...\n" + log[-12000:]
+          # 只保留「首个 Kotlin 报错 e: 」到「BUILD FAILED」之间的片段，那里才是真正的编译器错误
+          lines = log.splitlines()
+          start = next((i for i, l in enumerate(lines) if l.strip().startswith("e: ")), 0)
+          end = next((i for i, l in enumerate(lines) if "BUILD FAILED" in l), len(lines))
+          seg = "\n".join(lines[start:end + 1])
+          if len(seg) > 12000:
+              seg = "...(前面已省略)...\n" + seg[-12000:]
+          log = seg
           body = json.dumps({"tag_name": tag, "name": "CI 构建错误日志(最新)",
                              "body": "```\n" + log + "\n```"}).encode()
           # 删除旧 release（若存在）
