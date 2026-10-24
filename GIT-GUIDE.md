@@ -1,8 +1,8 @@
 # Git 极简指南（零基础 · Windows）
 
-> 配套：ICEC-2026 课程 Step 0
-> 目标：30 分钟走完「建仓库 → 首次提交 → 推送远程」，之后每天只用 4 条命令。
-> 学法：本指南 + AI 兜底。任何报错整段复制给 DeepSeek / Kimi / Qwen / ChatGPT，让它解释原因并给命令；关键排障对话按规范存档到 `03-AI-Collaboration/`，这就是课程要的过程数据。
+> 配套：ICEC-2026 课程 Step 0 目标：30 分钟走完「建仓库 → 首次提交 → 推送远程」，之后每天只用 4 条命令。 学法：本指南 +
+> AI 兜底。任何报错整段复制给 DeepSeek / Kimi / Qwen / ChatGPT，让它解释原因并给命令；关键排障对话按规范存档到
+> `03-AI-Collaboration/`，这就是课程要的过程数据。
 
 ---
 
@@ -38,9 +38,11 @@ git config --global user.email "你的常用邮箱"
 2. Repository name 填：`ICEC-2026-0183-Zhangjunming`（与本地文件夹同名）
 3. 可见性选 **Public**（课程要求公开）
 4. **不要**勾选 Add a README file（本地已有内容，勾了会产生冲突）
-5. Create repository → 复制仓库地址：`https://github.com/W137191/ICEC-2026-0183-Zhangjunming.git`
+5. Create repository → 复制仓库地址：
+   `https://github.com/W137191/ICEC-2026-0183-Zhangjunming.git`
 
-> 国内访问 GitHub 不稳定时，用 Gitee 平替：gitee.com → 右上角 **+** → 新建仓库 → 同名 → 公开 → 创建。后续命令里的地址换成 Gitee 的即可，其他操作完全一样。
+> 国内访问 GitHub 不稳定时，用 Gitee 平替：gitee.com → 右上角 **+** → 新建仓库 → 同名 → 公开 → 创建。
+> 后续命令里的地址换成 Gitee 的即可，其他操作完全一样。
 
 ## 五、关联远程并首次推送（一次性）
 
@@ -90,7 +92,8 @@ git push                                # 4. 推送到 GitHub
 ## 八、把 AI 变成你的 Git 助教
 
 1. **报错整段复制**：不要截图描述，把 Git Bash 里的英文报错全文粘贴给 AI
-2. **说清上下文**：目标 + 环境 + 已尝试，例如：「Windows + Git Bash，想把本地仓库推到新建的 GitHub 仓库，执行 git push 后报错如下……」
+2. **说清上下文**：目标 + 环境 + 已尝试，例如：「Windows + Git Bash，想把本地仓库推到新建的 GitHub 仓库，执行 git
+   push 后报错如下……」
 3. **要「命令 + 解释」**：让 AI 给可复制的命令并逐条解释，看不懂就追问
 4. **验证后归档**：关键排障对话按 `03-AI-Collaboration/README.md` 的模板存档
 

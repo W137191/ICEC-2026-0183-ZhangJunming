@@ -50,7 +50,8 @@
 
 ### 3.4 Markdown 与媒体文件
 - 报告里嵌图片/视频**必须用相对路径**：`![](../photos/课题06/xxx.jpg)`——绝对路径和 `file:///` 在 GitHub 上是坏链。
-- 视频一律转 **H.264**（`-crf23 -pix_fmt yuv420p -movflags +faststart`）再提交，GitHub 不支持 HEVC。
+- 视频一律转 **H.264**（`-crf23 -pix_fmt yuv420p -movflags +faststart`）再提交，GitHub 不支持
+  HEVC。
 - 改完嵌入路径要全仓验证一遍链接有效。
 
 ### 3.5 课程硬要求不可被 AI "优化"掉
@@ -69,7 +70,8 @@
   - 代码块一律用围栏 ```` ``` ```` 并**声明语言**（目录树/示意图用 `text`）；不用缩进式代码块
   - 列表标记统一：无序 `-`、有序 `1.`；**嵌套列表缩进 4 空格**；段落与列表/表格/代码块之间留空行
   - 裸 URL 用 `<https://...>` 包裹；仓内链接用相对路径
-- **Python**（依 Google Python Style Guide）：模块与函数写 docstring（`Args:` / `Returns:` / `Raises:` 段）；函数签名带类型注解；`snake_case` 命名；4 空格缩进；懒加载依赖要注释原因
+- **Python**（依 Google Python Style Guide）：模块与函数写 docstring（`Args:` / `Returns:`
+  / `Raises:` 段）；函数签名带类型注解；`snake_case` 命名；4 空格缩进；懒加载依赖要注释原因
 - **Kotlin/Java**：遵循 Android（Google）代码风格，4 空格缩进；**子包文件必须显式 import 应用命名空间的 `R`**
 - 已有历史文件不强制回炉重排（Google 的 Better/Best 规则：不为琐碎格式反复翻旧账），但**新写与改动到的文件必须合规**
 
@@ -77,9 +79,12 @@
 
 ## 4. 技术环境（AI 动手前必读）
 
-- **本地无 Android SDK**：App 不能本地编译。改完 Kotlin/Java 代码后 `git push`，由 GitHub Actions（`.github/workflows/build-apk.yml`）构建，APK 自动发布到 Release `apk-latest`。
-- **CI 特性**：构建失败时，错误诊断会自动发布到公开 Release `ci-build-log`（因为本地读不了 job 日志）；成功时自动清理该调试 Release。
-- **改 CI 或 App 代码后**：必须等一次 CI 结论为 `success` 才算完成；`failure` 时去 `ci-build-log` Release 读报错再修。
+- **本地无 Android SDK**：App 不能本地编译。改完 Kotlin/Java 代码后 `git push`，由 GitHub Actions（
+  `.github/workflows/build-apk.yml`）构建，APK 自动发布到 Release `apk-latest`。
+- **CI 特性**：构建失败时，错误诊断会自动发布到公开 Release `ci-build-log`（因为本地读不了 job 日志）；
+  成功时自动清理该调试 Release。
+- **改 CI 或 App 代码后**：必须等一次 CI 结论为 `success` 才算完成；`failure` 时去 `ci-build-log`
+  Release 读报错再修。
 - git 环境：git 2.55，全局身份已配置；`github.com` 经本地代理，API 访问 curl 需 `--ssl-no-revoke`。
 - **没有 gh CLI**；GitHub API 只读操作用 `curl --ssl-no-revoke`。
 
@@ -109,7 +114,7 @@
 
 **阶段一**：脚手架+采样数据已落地；缺：同框照 0 张（需 9 张）、课题02 待机/短视频工况数据、干净导航曲线（待用户装新 App 重测）。
 
-**阶段二**：主选项项目三，采集 App 已完工（CI success，APK 在 `apk-latest`）；FFT 特征脚本骨架就绪。
-**下一步**：装 APK → 采第 1 组样例验证 `src/fft_features.py` → 铺满 75 组 → 每日 `process_logs` + 同框实验照。
+**阶段二**：主选项项目三，采集 App 已完工（CI success，APK 在 `apk-latest`）；FFT 特征脚本骨架就绪。 **下一步**：
+装 APK → 采第 1 组样例验证 `src/fft_features.py` → 铺满 75 组 → 每日 `process_logs` + 同框实验照。
 
 > 每个 AI 完成实质性工作后，更新此快照，让下一个 AI 无缝接手。

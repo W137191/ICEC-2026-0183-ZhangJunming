@@ -1,7 +1,7 @@
 # 03 · AI 协作记录 AI Collaboration
 
-存放与 AI 协作的**关键对话**，重点是「提问 → 排障 → 解决」的完整链路。
-可用 AI：DeepSeek、Kimi、通义千问（Qwen）、ChatGPT 等。
+存放与 AI 协作的**关键对话**，重点是「提问 → 排障 → 解决」的完整链路。 可用 AI：DeepSeek、Kimi、通义千问（Qwen）、
+ChatGPT 等。
 
 ## 命名规范
 
