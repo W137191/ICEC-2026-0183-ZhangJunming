@@ -85,6 +85,36 @@
                 android:textSize="14sp" />
         </LinearLayout>
 
+        <!-- 本组备注 + 异常标记 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:background="@color/panel"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:padding="12dp">
+
+            <EditText
+                android:id="@+id/etNote"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginEnd="8dp"
+                android:hint="本组备注（可选：环境/设备异常）"
+                android:inputType="text"
+                android:textColor="@color/white"
+                android:textSize="14sp" />
+
+            <CheckBox
+                android:id="@+id/cbAnomaly"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="异常"
+                android:textColor="@color/white"
+                android:textSize="13sp" />
+        </LinearLayout>
+
         <!-- 开始采集 -->
         <Button
             android:id="@+id/btnCapture"
@@ -106,7 +136,17 @@
             android:textSize="16sp"
             android:textStyle="bold" />
 
-        <!-- 分享 / 返回 -->
+        <!-- 实时音量电平：确认麦克风真的在收音 -->
+        <ProgressBar
+            android:id="@+id/pbLevel"
+            style="?android:attr/progressBarStyleHorizontal"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:max="100"
+            android:progressTint="@color/line_temp" />
+
+        <!-- 分享最新 / 导出ZIP / 返回 -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -122,13 +162,20 @@
                 android:text="分享最新文件" />
 
             <Button
-                android:id="@+id/btnBack"
+                android:id="@+id/btnExportZip"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:layout_marginStart="4dp"
-                android:text="← 返回电量监测" />
+                android:text="导出全部ZIP" />
         </LinearLayout>
+
+        <Button
+            android:id="@+id/btnBack"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="← 返回电量监测" />
 
         <TextView
             android:id="@+id/tvResult"
@@ -137,7 +184,7 @@
             android:layout_marginTop="16dp"
             android:background="@color/panel"
             android:padding="10dp"
-            android:text="文件保存在 Android/data/com.example.batteryheatmonitor/files/Download/Sensing/，可用「分享最新文件」发给电脑或微信。"
+            android:text="文件保存在 Android/data/com.example.batteryheatmonitor/files/Download/Sensing/。采集几组后就点「导出全部ZIP」打包发到电脑备份——卸载 App 会清空全部数据。"
             android:textColor="@color/white"
             android:textSize="13sp" />
 

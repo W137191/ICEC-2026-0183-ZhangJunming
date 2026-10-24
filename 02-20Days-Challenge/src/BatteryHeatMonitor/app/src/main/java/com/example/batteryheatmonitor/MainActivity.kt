@@ -167,6 +167,10 @@ class MainActivity : AppCompatActivity() {
         findViewById<Button>(R.id.btnSensing).setOnClickListener {
             startActivity(Intent(this, SensingActivity::class.java))
         }
+        // 课题06 噪声测量（替代市面分贝仪：可导出 dB 时间序列 CSV）
+        findViewById<Button>(R.id.btnNoise).setOnClickListener {
+            startActivity(Intent(this, com.example.batteryheatmonitor.sensing.NoiseActivity::class.java))
+        }
     }
 
     private fun setupExportClear() {

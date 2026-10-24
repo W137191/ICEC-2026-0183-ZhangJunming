@@ -289,5 +289,16 @@
             android:textColor="@color/black"
             android:textStyle="bold" />
 
+        <!-- 课题06：噪声测量入口（替代市面分贝仪，可导出数据） -->
+        <Button
+            android:id="@+id/btnNoise"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:backgroundTint="@color/accent"
+            android:text="📊 噪声测量（课题06）"
+            android:textColor="@color/black"
+            android:textStyle="bold" />
+
     </LinearLayout>
 </ScrollView>

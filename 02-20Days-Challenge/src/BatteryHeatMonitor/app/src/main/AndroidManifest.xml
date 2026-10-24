@@ -40,6 +40,12 @@
             android:exported="false"
             android:screenOrientation="portrait" />
 
+        <!-- 课题06：噪声测量（导出 dB 时间序列，替代市面分贝仪截图） -->
+        <activity
+            android:name=".sensing.NoiseActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
+
         <!-- CSV 安全分享（避免直接暴露文件路径） -->
         <provider
             android:name="androidx.core.content.FileProvider"
