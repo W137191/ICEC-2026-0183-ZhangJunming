@@ -24,9 +24,11 @@ indent_size = 4
 [*.{yml,yaml,gradle}]
 indent_size = 2
 
-# Markdown：保留行尾双空格（= 换行），不裁剪。
+# Markdown：保留行尾双空格（= 换行），不裁剪；正文建议 ≤80 字符（Google 风格，
+# 编辑器显示列参考线用；链接/表格/标题/代码块不受此限）。
 [*.md]
 trim_trailing_whitespace = false
+max_line_length = 80
 
 # CSV 数据文件：保持原样，不做任何格式化。
 [*.{csv,json}]
