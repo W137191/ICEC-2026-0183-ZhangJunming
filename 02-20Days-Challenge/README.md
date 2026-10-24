@@ -8,7 +8,7 @@
 
 阶段二的主战场：**源码 + 过程日志 + 迭代记录**。
 
-```
+```text
 02-20Days-Challenge/
 ├── README.md        # 本说明
 ├── src/             # 项目源码（结构按技术栈自定：web/、arduino/、app/ …）

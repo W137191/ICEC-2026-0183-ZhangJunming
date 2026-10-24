@@ -21,7 +21,7 @@ Git 管理「文件的修改历史」。记住 4 个位置就够了：
 
 ## 二、安装 Git（只需一次）
 
-1. 打开 https://git-scm.com/download/win ，下载 64-bit Git for Windows Setup
+1. 打开 <https://git-scm.com/download/win> ，下载 64-bit Git for Windows Setup
 2. 双击安装，**一路 Next**（选项全部用默认值）
 3. 开始菜单打开 **Git Bash**，输入 `git --version`，出现 `git version 2.x.x` 即成功
 

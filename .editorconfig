@@ -1,0 +1,34 @@
+# Google 风格标准（编辑器级固化）
+# 参考：google.github.io/styleguide/（Markdown / Python 指南）
+# 装对应编辑器插件（VS Code: EditorConfig for VS Code）后自动生效。
+
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+indent_style = space
+indent_size = 2
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+# Python：Google Python Style Guide —— 4 空格缩进。
+[*.py]
+indent_size = 4
+
+# Kotlin / Java：Android（Google）代码风格 —— 4 空格缩进。
+[*.{kt,java}]
+indent_size = 4
+
+# YAML / Gradle：2 空格缩进。
+[*.{yml,yaml,gradle}]
+indent_size = 2
+
+# Markdown：保留行尾双空格（= 换行），不裁剪。
+[*.md]
+trim_trailing_whitespace = false
+
+# CSV 数据文件：保持原样，不做任何格式化。
+[*.{csv,json}]
+trim_trailing_whitespace = false
+insert_final_newline = false

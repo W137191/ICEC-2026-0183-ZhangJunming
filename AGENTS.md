@@ -61,6 +61,17 @@
 ### 3.6 语言
 - 对用户用**简体中文**；文件内容也用中文（专有名词/代码除外）。
 
+### 3.7 代码与文档风格（Google 风格标准，2026-10-24 起执行）
+本仓库统一采用 **Google 风格标准**，根目录 `.editorconfig` 已在编辑器层固化，改文件前先确认装好 EditorConfig 插件。
+- **Markdown**（依 [Google Markdown Style Guide](https://google.github.io/styleguide/docguide/style)）：
+  - ATX 标题（`#` 不用下划线式）；**每篇只有一个 H1**；标题前后留空行
+  - 代码块一律用围栏 ```` ``` ```` 并**声明语言**（目录树/示意图用 `text`）；不用缩进式代码块
+  - 列表标记统一：无序 `-`、有序 `1.`；**嵌套列表缩进 4 空格**；段落与列表/表格/代码块之间留空行
+  - 裸 URL 用 `<https://...>` 包裹；仓内链接用相对路径
+- **Python**（依 Google Python Style Guide）：模块与函数写 docstring（`Args:` / `Returns:` / `Raises:` 段）；函数签名带类型注解；`snake_case` 命名；4 空格缩进；懒加载依赖要注释原因
+- **Kotlin/Java**：遵循 Android（Google）代码风格，4 空格缩进；**子包文件必须显式 import 应用命名空间的 `R`**
+- 已有历史文件不强制回炉重排（Google 的 Better/Best 规则：不为琐碎格式反复翻旧账），但**新写与改动到的文件必须合规**
+
 ---
 
 ## 4. 技术环境（AI 动手前必读）
