@@ -111,12 +111,13 @@ jobs:
               pass
           # 创建 release（自动建标签指向当前 commit）
           body = json.dumps({"tag_name": tag,
-                             "name": "发热监测 + 声振采集 App（最新 APK）",
+                             "name": "发热监测 + 声振采集 + 噪声测量 App（最新 APK）",
                              "body": (
                                  "自动构建的 debug APK，公开下载，无需登录。\n\n"
                                  "功能：\n"
                                  "- 电量/温度监测（4 工况 × 每 5 分钟，CSV 导出）\n"
-                                 "- 声振采集（5 工况 × 10 秒：麦克风 WAV + 加速度计 CSV）\n\n"
+                                 "- 声振采集（5 工况 × 10 秒：麦克风 WAV + 加速度计 CSV，一键 ZIP 导出）\n"
+                                 "- 噪声测量（课题06：dB 时间序列 CSV 导出，替代市面分贝仪）\n\n"
                                  f"构建来源 commit：`{os.environ.get('GITHUB_SHA','')[:7]}`\n"
                                  "安装：手机允许未知来源应用即可；旧版可直接覆盖安装（统一 debug 签名）。"
                              )}).encode()
