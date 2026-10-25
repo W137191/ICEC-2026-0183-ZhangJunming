@@ -164,6 +164,10 @@
 - **改 CI 或 App 代码后**：必须等一次 CI 结论为 `success` 才算完成；`failure` 时去 `ci-build-log`
   Release 读报错再修。
 - git 环境：git 2.55，全局身份已配置；`github.com` 经本地代理，API 访问 curl 需 `--ssl-no-revoke`。
+- **两个远程别推错**：`newrepo` = 课程主仓 `ICEC-2026-0183-ZhangJunming`（唯一有效目标）；
+  `origin` = 旧仓库 `symmetrical-train`（2026-10-22 迁移前保留，勿再推）。裸 `git push`
+  走 upstream（即 newrepo）不会错；**切勿手写 `git push origin`**（2026-10-25 误推过一次，
+  见 9.5）。
 - **没有 gh CLI**；GitHub API 只读操作用 `curl --ssl-no-revoke`。
 - **代理故障（CONNECT 502）时**：提交已安全留在本地，不要连续重试轰炸；告知用户待代理恢复，
   或请用户在网络正常环境执行 `git push newrepo main`；恢复后先 `git log newrepo/main..HEAD`
@@ -269,6 +273,12 @@
 ### 9.4 状态快照的准确性
 - 写快照前必须**实测核实**（awk 统计 CSV、ls 清点照片、git log 对提交），不能凭记忆——
   本次就曾把课题02 已填 5 行的数据误记成 0 行（命令速查见第 10 节）
+
+### 9.5 推送目标别推错远程
+- 2026-10-25 归档提交后执行了 `git push origin main`，误推到旧仓库 `symmetrical-train`；
+  课程主仓 `newrepo` 一度未同步，发现后立即补推 `git push newrepo main` 修复
+- 教训：手写推送命令必须写全 `git push newrepo main`；裸 `git push` 走 upstream 不会错，
+  但显式写 `origin` 就会推进旧仓库——推完用 `git branch -vv` 确认 ahead 计数归零
 
 ---
 
