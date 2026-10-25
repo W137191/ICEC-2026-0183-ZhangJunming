@@ -34,6 +34,11 @@
             android:exported="false"
             android:foregroundServiceType="dataSync" />
 
+        <!-- 采样看门狗：进程被系统回收后，由 AlarmManager 闹钟唤起补采，防采样断档 -->
+        <receiver
+            android:name=".TickReceiver"
+            android:exported="false" />
+
         <!-- 项目三：声振采集（手机麦克风 + 加速度计） -->
         <activity
             android:name=".sensing.SensingActivity"
