@@ -29,11 +29,17 @@ import java.util.concurrent.atomic.AtomicLong
  * 前台采样服务：让监测在熄屏 / 切到其它 App（刷视频、打游戏）时持续进行。
  * 每 5 分钟采一条：电量% + 温度℃ + 充电状态，写入 SampleStore 并广播刷新界面。
  *
- * v1.3 关键修正：区分「用户主动点开始监测」与「系统因 START_STICKY 重投递 / 看门狗唤起而重启服务」。
- * 旧版用 intent.hasExtra(EXTRA_SCENARIO) 判定全新会话，但 START_STICKY 会把最后一次带该 extra 的
- * intent 重新投递，导致进程被杀后重启被误判为「新会话」→ 反复采 0min 残片、网格永远积不满。
- * 现改用持久化标记 [KEY_FORCE_FRESH]（仅用户点击开始时由 MainActivity 置真）判定，且消费后立即清除，
- * 任何后续重启红投递都不会再触发 0min 起点；另用 [MAX_SESSION_MS] 防止续接过度陈旧的起点。
+ * v1.5 关键修正（「每 5 分钟一格不漏」真正落地）：
+ * v1.4 的主调度是 Handler.postDelayed，仅用「晚 60 秒的 setAndAllowWhileIdle 看门狗」兜底。
+ * 但手机熄屏进入 Doze 后，Android 会把这种「非精确」闹钟推迟到维护窗口，
+ * 于是出现数十分钟的采样空档（遗留数据里 39/11/13/29 分钟的跳跃即由此而来）。
+ *
+ * 现改为【精确闹钟作主调度】：每个网格点用 AlarmManager.setExactAndAllowWhileIdle 直接挂在该时刻，
+ * 这是「即便息屏/Doze 也由系统准时唤起」的官方推荐做法——闹钟由系统持有，进程被杀也不丢，
+ * 到点即拉起服务补采，每 5 分钟一格规整、不漏、不重复。原 v1.4 的「重启续接补满缺格」逻辑保留作安全网。
+ *
+ * v1.3 引入的 KEY_FORCE_FRESH：区分「用户主动点开始」与「系统因 START_STICKY 重投递 / 闹钟唤起而重启」，
+ * 杜绝重启被误判为「新会话」→ 反复采 0min 残片。
  */
 class MonitorService : Service() {
 
@@ -49,16 +55,16 @@ class MonitorService : Service() {
         private const val KEY_SCENARIO = "scenario"
         private const val KEY_INTERVAL = "interval_ms"
         private const val KEY_MANUAL = "manual_temp"
-        /** 仅用户主动点"开始监测"时由 MainActivity 置真；系统重启 / 看门狗唤起时已被消费清除，用于区分"全新会话"与"续接旧会话" */
+        /** 仅用户主动点"开始监测"时由 MainActivity 置真；系统重启 / 闹钟唤起时已被消费清除，用于区分"全新会话"与"续接旧会话" */
         internal const val KEY_FORCE_FRESH = "force_fresh"
         /** 会话超过此时长（毫秒）视为过期：重启时即便 force_fresh 残留也开新会话，而非续接陈旧的起点 */
         private const val MAX_SESSION_MS = 6L * 60 * 60 * 1000
 
-        /** 看门狗闹钟在网格点之后多少毫秒触发（给 Handler 留出先触发的机会） */
-        private const val WATCHDOG_DELAY_MS = 60_000L
-        /** 单次采样迟于网格点超过该值，就在备注里如实标注延迟 */
+        /** 30 分钟目标时长内的网格点数：0,5,10,15,20,25,30min → 索引 0..6 共 7 个点 */
+        private const val GRID_POINTS = 7
+        /** 单次采样迟于网格点超过该值，就在备注里如实标注延迟（用于暴露系统仍推迟闹钟的情况） */
         private const val LATE_NOTE_THRESHOLD_MS = 90_000L
-        /** 去重窗口：30 秒内已有一条采样则跳过（Handler 与看门狗双路触发保护） */
+        /** 去重窗口：30 秒内已有一条采样则跳过（闹钟 / 重启双路触发同一点保护） */
         private const val DEDUPE_WINDOW_MS = 30_000L
         /** 间隔下限保护，避免非法参数导致除零 / 密集采样 */
         private const val MIN_INTERVAL_MS = 60_000L
@@ -86,16 +92,13 @@ class MonitorService : Service() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         val prefs = getSharedPreferences(PREFS, Context.MODE_PRIVATE)
 
-        // v1.3：是否"全新会话"不再看 intent 是否带 EXTRA_SCENARIO（START_STICKY 会重投递该 intent 造成误判），
-        // 而是看 MainActivity 在用户点击开始时写入的持久化标记 KEY_FORCE_FRESH，且消费后立即清除，
-        // 使任何后续系统重启 / 看门狗唤起都不会再触发 0min 起点；会话过期(>MAX_SESSION_MS)也强制开新会话。
+        // 是否"全新会话"看 MainActivity 在用户点击开始时写入的持久化标记 KEY_FORCE_FRESH，
+        // 且消费后立即清除，使任何后续系统重启 / 闹钟唤起都不会再触发 0min 起点；会话过期也强制开新会话。
         val forceFreshFlag = prefs.getBoolean(KEY_FORCE_FRESH, false)
         val priorStart = prefs.getLong(KEY_START, 0L)
-        // 仅当确实存在"上一会话"起点时才谈得上过期；首启 KEY_START 为 0，不能误判过期
         val sessionExpired = priorStart > 0 &&
             (System.currentTimeMillis() - priorStart) > MAX_SESSION_MS
         val freshStart = forceFreshFlag && !sessionExpired
-        // 消费标记：无论是否真的开新会话，都清除它，杜绝重启红投递二次触发
         if (forceFreshFlag) {
             prefs.edit().putBoolean(KEY_FORCE_FRESH, false).apply()
         }
@@ -126,7 +129,7 @@ class MonitorService : Service() {
 
         startForeground(1, buildNotification("监测中：$scenario"))
 
-        // 全程持有不超时唤醒锁：监测期间 CPU 不休眠，周期回调才能按时触发
+        // 持有不超时唤醒锁：监测期间 CPU 不休眠，周期回调才能按时触发（配合下方精确闹钟双保险）
         val pm = getSystemService(Context.POWER_SERVICE) as PowerManager
         wakeLock?.let { if (it.isHeld) it.release() }
         wakeLock = pm.newWakeLock(
@@ -141,7 +144,7 @@ class MonitorService : Service() {
             thread = HandlerThread("MonitorThread").also { it.start() }
             handler = Handler(thread!!.looper)
         }
-        // 同一时间只保留一条调度链：清掉旧链（可能是被看门狗唤起前的残留）再重排
+        // 同一时间只保留一条调度链：清掉旧链（可能是被闹钟唤起前的残留）再重排
         handler?.removeCallbacksAndMessages(null)
         tickIndex = 0
         // 采样与文件 IO 全部放到 handler 线程，主线程只做状态装配
@@ -151,11 +154,11 @@ class MonitorService : Service() {
     }
 
     /**
-     * 排定采样节奏（v1.3 引入 force_fresh 防 0min 残片；v1.4 保证重启后不漏格）：
-     * - 全新会话：先采 0min 起点，再由 scheduleNext 从第 1 个网格点开始；
-     * - 被系统重建（START_STICKY 重投递 / 看门狗唤起）：从「已采样本最大 elapsedMin」之后续接，
+     * 排定采样节奏（v1.3 引入 force_fresh 防 0min 残片；v1.4 保证重启后不漏格；v1.5 精确闹钟作主调度）：
+     * - 全新会话：先采 0min 起点，再由 scheduleNext 从该时刻精确挂第 1 个网格点闹钟；
+     * - 被系统重建（START_STICKY 重投递 / 闹钟唤起）：从「已采样本最大 elapsedMin」之后续接，
      *   **一次性把已到期却未采的网格点补采满**（每个点 elapsedMin 由 index 决定、互不相同，
-     *   不会被去重误删），再正常排程后续点；已采满 30min 目标网格则停止排程。
+     *   不会被去重误删），再正常排程后续精确闹钟；已采满 30min 目标网格则停止排程。
      */
     private fun kickOff(freshStart: Boolean) {
         if (freshStart) {
@@ -164,7 +167,7 @@ class MonitorService : Service() {
             return
         }
         val intervalMin = intervalMs / 60000  // 5（分钟）
-        val lastIdx = (intervalMin * 6).toInt()  // 30min 目标对应 index 6
+        val lastIdx = GRID_POINTS - 1  // 30min 目标对应索引 6
         val maxElapsed = SampleStore.loadAll(this)
             .filter { it.scenario == scenario }
             .maxOfOrNull { it.elapsedMin } ?: -1
@@ -184,19 +187,26 @@ class MonitorService : Service() {
         scheduleNext()
     }
 
-    /** 绝对网格调度：下一个采样时刻 = 起点 + (tickIndex+1)×间隔，单次回调早晚不累积漂移 */
+    /**
+     * 精确网格调度（v1.5 核心修复）：下一个采样时刻 = 起点 + tickIndex×间隔，
+     * 用 setExactAndAllowWhileIdle 直接在该时刻挂闹钟——息屏 / Doze 下也由系统准时唤起，
+     * 取代 v1.4 易被打断的 Handler.postDelayed 链与粗粒度看门狗，确保每 5 分钟一格不漏。
+     * 闹钟由系统持有，进程被杀也不丢；到点唤起服务后由 kickOff 续接补采。
+     */
     private fun scheduleNext() {
         tickIndex++
+        // 已排到 30min 目标网格的最后一个点（索引 GRID_POINTS-1），不再挂后续闹钟
+        if (tickIndex >= GRID_POINTS) return
         val nextTick = startTimestamp + tickIndex * intervalMs
-        val delay = (nextTick - System.currentTimeMillis()).coerceAtLeast(0L)
-        handler?.postDelayed({ onTick() }, delay)
-        armWatchdog(nextTick)
-    }
-
-    private fun onTick() {
-        cancelWatchdog()
-        sampleOnce(tickIndex)
-        scheduleNext()
+        val am = getSystemService(Context.ALARM_SERVICE) as AlarmManager
+        val pi = tickPendingIntent()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, nextTick, pi)
+        } else {
+            // API 21/22 无 while-idle 变体，退化为 setExact（仍远优于 postDelayed）
+            @Suppress("MissingPermission")
+            am.setExact(AlarmManager.RTC_WAKEUP, nextTick, pi)
+        }
     }
 
     private fun sampleOnce(index: Int) {
@@ -204,8 +214,8 @@ class MonitorService : Service() {
         // 网格点位置由 index 决定，elapsedMin 始终对齐 5 分钟网格（0/5/10…），
         // 不受"进程被杀后补采"的墙钟时间影响——保证每 5 分钟一格规整、不漏、不重
         val elapsedMin = (index * intervalMs / 60000).toInt()
-        // 去重：仅当"同一网格点(elapsedMin 相同) 且 30 秒内"才跳过（Handler/看门狗双路触发同一点）；
-        // 不同网格点的补采互不干扰，确保进程被杀后一次性/级联补采不漏格
+        // 去重：仅当"同一网格点(elapsedMin 相同) 且 30 秒内"才跳过（闹钟 / 重启双路触发同一点）；
+        // 不同网格点的补采互不干扰，确保进程被杀后一次性 / 级联补采不漏格
         val last = SampleStore.loadAll(this).maxByOrNull { it.timestamp }
         if (last != null && last.elapsedMin == elapsedMin && now - last.timestamp < DEDUPE_WINDOW_MS) return
 
@@ -232,7 +242,7 @@ class MonitorService : Service() {
         sendBroadcast(Intent(ACTION_NEW_SAMPLE))
     }
 
-    // ---------- 看门狗：进程被杀后由系统闹钟唤起补采 ----------
+    // ---------- 精确闹钟：进程被杀 / 息屏后由系统唤起补采 ----------
 
     private fun tickPendingIntent(): PendingIntent {
         val flags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
@@ -245,17 +255,8 @@ class MonitorService : Service() {
         )
     }
 
-    private fun armWatchdog(nextTick: Long) {
-        val am = getSystemService(Context.ALARM_SERVICE) as AlarmManager
-        // setAndAllowWhileIdle 无需精确闹钟权限，息屏 / Doze 下仍会被系统唤起
-        am.setAndAllowWhileIdle(
-            AlarmManager.RTC_WAKEUP,
-            nextTick + WATCHDOG_DELAY_MS,
-            tickPendingIntent()
-        )
-    }
-
-    private fun cancelWatchdog() {
+    /** 取消尚未触发的精确闹钟（用户主动停止或采满 30min 时调用，避免闹钟日后误唤起） */
+    private fun cancelTickAlarm() {
         val am = getSystemService(Context.ALARM_SERVICE) as AlarmManager
         am.cancel(tickPendingIntent())
     }
@@ -309,7 +310,7 @@ class MonitorService : Service() {
         thread?.quitSafely()
         thread = null
         handler = null
-        cancelWatchdog()
+        cancelTickAlarm()
         wakeLock?.let {
             if (it.isHeld) it.release()
         }
