@@ -151,11 +151,11 @@ class MonitorService : Service() {
     }
 
     /**
-     * 排定采样节奏（v1.3）：
+     * 排定采样节奏（v1.3 引入 force_fresh 防 0min 残片；v1.4 保证重启后不漏格）：
      * - 全新会话：先采 0min 起点，再由 scheduleNext 从第 1 个网格点开始；
-     * - 被系统重建（START_STICKY 重投递 / 看门狗唤起）：从「已采样本最大 elapsedMin」之后继续，
-     *   已过期的网格点因 delay<=0 被立即（级联）补采填满缺格，且不重复已采点；
-     *   若已采满 30min 目标网格（或更多），不再排程，避免重启后越界重采。
+     * - 被系统重建（START_STICKY 重投递 / 看门狗唤起）：从「已采样本最大 elapsedMin」之后续接，
+     *   **一次性把已到期却未采的网格点补采满**（每个点 elapsedMin 由 index 决定、互不相同，
+     *   不会被去重误删），再正常排程后续点；已采满 30min 目标网格则停止排程。
      */
     private fun kickOff(freshStart: Boolean) {
         if (freshStart) {
@@ -163,16 +163,24 @@ class MonitorService : Service() {
             scheduleNext()
             return
         }
+        val intervalMin = intervalMs / 60000  // 5（分钟）
+        val lastIdx = (intervalMin * 6).toInt()  // 30min 目标对应 index 6
         val maxElapsed = SampleStore.loadAll(this)
             .filter { it.scenario == scenario }
             .maxOfOrNull { it.elapsedMin } ?: -1
-        val intervalMin = intervalMs / 60000  // 5（分钟）
-        if (maxElapsed >= intervalMin * 6) {
+        if (maxElapsed >= lastIdx * intervalMin) {
             // 已采满 30min 目标网格，停止后续排程（防止重启后越界重采已采点）
             return
         }
-        val nextIndex = (maxElapsed / intervalMin).toInt() + 1
-        tickIndex = nextIndex - 1
+        val startIdx = (maxElapsed / intervalMin).toInt() + 1
+        val nowIdx = ((System.currentTimeMillis() - startTimestamp) / intervalMs).toInt()
+        val endIdx = if (nowIdx < lastIdx) nowIdx else lastIdx
+        // 把「已到期却还没采」的网格点一次性补采满（index 决定 elapsedMin，互不干扰、不漏）
+        for (i in startIdx..endIdx) {
+            sampleOnce(i)
+        }
+        tickIndex = endIdx
+        if (endIdx >= lastIdx) return  // 已到 30min 目标，不再排程后续点
         scheduleNext()
     }
 
@@ -193,11 +201,14 @@ class MonitorService : Service() {
 
     private fun sampleOnce(index: Int) {
         val now = System.currentTimeMillis()
-        // 去重：Handler 与看门狗可能双路触发，30 秒内已有采样则跳过
+        // 网格点位置由 index 决定，elapsedMin 始终对齐 5 分钟网格（0/5/10…），
+        // 不受"进程被杀后补采"的墙钟时间影响——保证每 5 分钟一格规整、不漏、不重
+        val elapsedMin = (index * intervalMs / 60000).toInt()
+        // 去重：仅当"同一网格点(elapsedMin 相同) 且 30 秒内"才跳过（Handler/看门狗双路触发同一点）；
+        // 不同网格点的补采互不干扰，确保进程被杀后一次性/级联补采不漏格
         val last = SampleStore.loadAll(this).maxByOrNull { it.timestamp }
-        if (last != null && now - last.timestamp < DEDUPE_WINDOW_MS) return
+        if (last != null && last.elapsedMin == elapsedMin && now - last.timestamp < DEDUPE_WINDOW_MS) return
 
-        val elapsedMin = ((now - startTimestamp) / 60000).toInt()
         val lateMs = now - (startTimestamp + index.toLong() * intervalMs)
         val note = if (lateMs > LATE_NOTE_THRESHOLD_MS) {
             "定时延迟${lateMs / 1000}s(系统回收进程或定时被推迟)"
