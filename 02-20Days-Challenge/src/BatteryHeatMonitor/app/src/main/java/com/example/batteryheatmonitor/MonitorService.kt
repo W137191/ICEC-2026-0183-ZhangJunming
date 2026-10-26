@@ -29,17 +29,11 @@ import java.util.concurrent.atomic.AtomicLong
  * 前台采样服务：让监测在熄屏 / 切到其它 App（刷视频、打游戏）时持续进行。
  * 每 5 分钟采一条：电量% + 温度℃ + 充电状态，写入 SampleStore 并广播刷新界面。
  *
- * 关键设计（v1.2，修 10-25 实测暴露的定时断档问题）：
- * 旧版用 postDelayed 递归排下一次采样，进程一旦被系统回收，Handler 链随之死亡，
- * START_STICKY 重启时机不定，实测出现 7~45 分钟采样空档与"重启 0min 残片"。
- * 新版三级保障：
- *   1. 绝对网格调度：下一次采样时刻 = 会话起点 + N×间隔（墙上时钟），
- *      单次回调早晚不影响后续网格点，杜绝漂移累积；
- *   2. 看门狗闹钟：每个网格点在 AlarmManager 挂 RTC_WAKEUP 闹钟，进程被杀后
- *      由系统唤起 TickReceiver 重新拉起服务补采，采样空档不超过看门狗余量；
- *   3. 重启不盲采：服务被重建时只在网格点真正到期才补采一条，elapsedMin 按
- *      墙上时钟计算，迟于网格点超过 90s 会在备注如实标注"定时延迟Xs"。
- * 采样前去重（30 秒内已有采样则跳过），防止 Handler 与看门狗双路触发重复记数。
+ * v1.3 关键修正：区分「用户主动点开始监测」与「系统因 START_STICKY 重投递 / 看门狗唤起而重启服务」。
+ * 旧版用 intent.hasExtra(EXTRA_SCENARIO) 判定全新会话，但 START_STICKY 会把最后一次带该 extra 的
+ * intent 重新投递，导致进程被杀后重启被误判为「新会话」→ 反复采 0min 残片、网格永远积不满。
+ * 现改用持久化标记 [KEY_FORCE_FRESH]（仅用户点击开始时由 MainActivity 置真）判定，且消费后立即清除，
+ * 任何后续重启红投递都不会再触发 0min 起点；另用 [MAX_SESSION_MS] 防止续接过度陈旧的起点。
  */
 class MonitorService : Service() {
 
@@ -50,11 +44,15 @@ class MonitorService : Service() {
         const val ACTION_NEW_SAMPLE = "com.example.batteryheatmonitor.NEW_SAMPLE"
         const val CHANNEL_ID = "battery_monitor"
 
-        private const val PREFS = "monitor_session"
+        internal const val PREFS = "monitor_session"
         private const val KEY_START = "start_ts"
         private const val KEY_SCENARIO = "scenario"
         private const val KEY_INTERVAL = "interval_ms"
         private const val KEY_MANUAL = "manual_temp"
+        /** 仅用户主动点"开始监测"时由 MainActivity 置真；系统重启 / 看门狗唤起时已被消费清除，用于区分"全新会话"与"续接旧会话" */
+        internal const val KEY_FORCE_FRESH = "force_fresh"
+        /** 会话超过此时长（毫秒）视为过期：重启时即便 force_fresh 残留也开新会话，而非续接陈旧的起点 */
+        private const val MAX_SESSION_MS = 6L * 60 * 60 * 1000
 
         /** 看门狗闹钟在网格点之后多少毫秒触发（给 Handler 留出先触发的机会） */
         private const val WATCHDOG_DELAY_MS = 60_000L
@@ -88,25 +86,27 @@ class MonitorService : Service() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         val prefs = getSharedPreferences(PREFS, Context.MODE_PRIVATE)
 
-        // 读取参数：优先用本次启动传入的，否则（服务被系统重建、intent 为空）从持久化恢复
-        val freshStart = intent?.hasExtra(EXTRA_SCENARIO) == true
-        scenario = if (freshStart) {
-            intent!!.getStringExtra(EXTRA_SCENARIO) ?: "待机"
-        } else {
-            prefs.getString(KEY_SCENARIO, "待机") ?: "待机"
+        // v1.3：是否"全新会话"不再看 intent 是否带 EXTRA_SCENARIO（START_STICKY 会重投递该 intent 造成误判），
+        // 而是看 MainActivity 在用户点击开始时写入的持久化标记 KEY_FORCE_FRESH，且消费后立即清除，
+        // 使任何后续系统重启 / 看门狗唤起都不会再触发 0min 起点；会话过期(>MAX_SESSION_MS)也强制开新会话。
+        val forceFreshFlag = prefs.getBoolean(KEY_FORCE_FRESH, false)
+        val priorStart = prefs.getLong(KEY_START, 0L)
+        // 仅当确实存在"上一会话"起点时才谈得上过期；首启 KEY_START 为 0，不能误判过期
+        val sessionExpired = priorStart > 0 &&
+            (System.currentTimeMillis() - priorStart) > MAX_SESSION_MS
+        val freshStart = forceFreshFlag && !sessionExpired
+        // 消费标记：无论是否真的开新会话，都清除它，杜绝重启红投递二次触发
+        if (forceFreshFlag) {
+            prefs.edit().putBoolean(KEY_FORCE_FRESH, false).apply()
         }
-        intervalMs = (
-            if (freshStart) {
-                intent!!.getLongExtra(EXTRA_INTERVAL_MS, 5 * 60 * 1000L)
-            } else {
-                prefs.getLong(KEY_INTERVAL, 5 * 60 * 1000L)
-            }
-            ).coerceAtLeast(MIN_INTERVAL_MS)
-        val manual = if (freshStart) {
-            intent!!.getFloatExtra(EXTRA_MANUAL_TEMP, -1f)
-        } else {
-            prefs.getFloat(KEY_MANUAL, -1f)
-        }
+
+        // 参数读取：优先用本次启动传入的 intent extra（用户点击 / 系统重投递均可能带），否则从持久化恢复
+        scenario = intent?.getStringExtra(EXTRA_SCENARIO)
+            ?: prefs.getString(KEY_SCENARIO, "待机") ?: "待机"
+        intervalMs = (intent?.getLongExtra(EXTRA_INTERVAL_MS, -1L)?.takeIf { it > 0 }
+            ?: prefs.getLong(KEY_INTERVAL, 5 * 60 * 1000L)).coerceAtLeast(MIN_INTERVAL_MS)
+        val manual = intent?.getFloatExtra(EXTRA_MANUAL_TEMP, -2f)?.takeIf { it != -2f }
+            ?: prefs.getFloat(KEY_MANUAL, -1f)
         provider = if (manual >= 0f) ManualTempProvider(manual) else SystemBatteryTempProvider()
 
         // 全新开始时记录真实起点；重建时沿用旧起点，保证 elapsedMin 连续
@@ -151,27 +151,29 @@ class MonitorService : Service() {
     }
 
     /**
-     * 排定采样节奏：
-     * - 全新会话：先采 0min 起点，再从第 1 个网格点开始；
-     * - 被系统重建：不盲采起点（消除"重启 0min 残片"），仅当网格点已到期时补采一条。
+     * 排定采样节奏（v1.3）：
+     * - 全新会话：先采 0min 起点，再由 scheduleNext 从第 1 个网格点开始；
+     * - 被系统重建（START_STICKY 重投递 / 看门狗唤起）：从「已采样本最大 elapsedMin」之后继续，
+     *   已过期的网格点因 delay<=0 被立即（级联）补采填满缺格，且不重复已采点；
+     *   若已采满 30min 目标网格（或更多），不再排程，避免重启后越界重采。
      */
     private fun kickOff(freshStart: Boolean) {
         if (freshStart) {
             sampleOnce(0)
-        } else {
-            catchUpIfDue()
+            scheduleNext()
+            return
         }
+        val maxElapsed = SampleStore.loadAll(this)
+            .filter { it.scenario == scenario }
+            .maxOfOrNull { it.elapsedMin } ?: -1
+        val intervalMin = intervalMs / 60000  // 5（分钟）
+        if (maxElapsed >= intervalMin * 6) {
+            // 已采满 30min 目标网格，停止后续排程（防止重启后越界重采已采点）
+            return
+        }
+        val nextIndex = (maxElapsed / intervalMin).toInt() + 1
+        tickIndex = nextIndex - 1
         scheduleNext()
-    }
-
-    /** 重建后补采：已到期的网格点补一条（elapsedMin 反映真实间隔，延迟写进备注） */
-    private fun catchUpIfDue() {
-        val now = System.currentTimeMillis()
-        val due = ((now - startTimestamp) / intervalMs).toInt()
-        if (due >= 1) {
-            sampleOnce(due)
-            tickIndex = due
-        }
     }
 
     /** 绝对网格调度：下一个采样时刻 = 起点 + (tickIndex+1)×间隔，单次回调早晚不累积漂移 */

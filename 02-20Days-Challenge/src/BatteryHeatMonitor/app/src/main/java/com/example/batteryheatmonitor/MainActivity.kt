@@ -148,6 +148,10 @@ class MainActivity : AppCompatActivity() {
             putExtra(MonitorService.EXTRA_INTERVAL_MS, 5 * 60 * 1000L)
             putExtra(MonitorService.EXTRA_MANUAL_TEMP, manualTemp ?: -1f)
         }
+        // v1.3：在真正拉起服务前，把"全新会话"标记写入持久化，供 MonitorService 区分
+        // 用户主动开始 vs 系统因 START_STICKY 重投递而重启（后者不会带此标记，不会误采 0min 残片）。
+        getSharedPreferences(MonitorService.PREFS, Context.MODE_PRIVATE)
+            .edit().putBoolean(MonitorService.KEY_FORCE_FRESH, true).apply()
         ContextCompat.startForegroundService(this, intent)
         monitoring = true
         btnStartStop.text = "停止监测"
@@ -156,6 +160,9 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun stopMonitoring() {
+        // v1.3：清除"全新会话"标记，确保停止后即便服务被系统重启也不会误采 0min 残片
+        getSharedPreferences(MonitorService.PREFS, Context.MODE_PRIVATE)
+            .edit().putBoolean(MonitorService.KEY_FORCE_FRESH, false).apply()
         stopService(Intent(this, MonitorService::class.java))
         monitoring = false
         btnStartStop.text = "开始监测（每5分钟采样）"
