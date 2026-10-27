@@ -161,7 +161,14 @@ class MonitorService : Service() {
         handler?.removeCallbacksAndMessages(null)
         tickIndex = 0
         // 采样与文件 IO 全部放到 handler 线程，主线程只做状态装配
-        handler?.post { kickOff(freshStart, resumeExpired) }
+        handler?.post {
+            try {
+                kickOff(freshStart, resumeExpired)
+            } catch (e: Exception) {
+                // v1.7：任何未在采样链内部捕获的异常都在此兜底，绝不抛到线程顶层导致进程被杀（闪退）
+                android.util.Log.e("MonitorService", "kickOff 异常已捕获，避免闪退：${e.message}", e)
+            }
+        }
 
         return START_STICKY
     }
@@ -215,6 +222,13 @@ class MonitorService : Service() {
      * 用 setExactAndAllowWhileIdle 直接在该时刻挂闹钟——息屏 / Doze 下也由系统准时唤起，
      * 取代 v1.4 易被打断的 Handler.postDelayed 链与粗粒度看门狗，确保每 5 分钟一格不漏。
      * 闹钟由系统持有，进程被杀也不丢；到点唤起服务后由 kickOff 续接补采。
+     *
+     * v1.7 修复「点开始就闪退」：setExactAndAllowWhileIdle 需要 SCHEDULE_EXACT_ALARM 权限，
+     * 而 Android 13+ / 部分 OEM 默认不授予、或用户曾在设置里关闭该权限 → 调用即抛
+     * SecurityException；该异常发生在采样线程且未被捕获，默认未捕获异常会直接杀进程（闪退）。
+     * 现改由 safeScheduleExact 统一处理：先查 canScheduleExactAlarms()，未授予则退化为
+     * setAndAllowWhileIdle（仍 Doze 感知、不崩溃），并对任何 SecurityException 兜底同样退化，
+     * 保证「开始监测」一定不崩、采样照常进行（仅极端情况下 5 分钟刻度略被 Doze 推迟）。
      */
     private fun scheduleNext() {
         tickIndex++
@@ -223,12 +237,34 @@ class MonitorService : Service() {
         val nextTick = startTimestamp + tickIndex * intervalMs
         val am = getSystemService(Context.ALARM_SERVICE) as AlarmManager
         val pi = tickPendingIntent()
+        safeScheduleExact(am, nextTick, pi)
+    }
+
+    /**
+     * 安全挂精确闹钟（v1.7）：优先 setExactAndAllowWhileIdle（Doze 下仍准时，每 5 分钟一格不漏）；
+     * 若系统未授予 SCHEDULE_EXACT_ALARM（Android 13+ / OEM 默认不授予 / 用户曾关闭）则捕获
+     * SecurityException 并退化为 setAndAllowWhileIdle（Doze 感知但不强制精确，绝不崩溃）。
+     */
+    private fun safeScheduleExact(am: AlarmManager, triggerAt: Long, pi: PendingIntent) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, nextTick, pi)
+            try {
+                val canExact = Build.VERSION.SDK_INT < Build.VERSION_CODES.S ||
+                    am.canScheduleExactAlarms()
+                if (canExact) {
+                    am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAt, pi)
+                } else {
+                    // 未授予精确闹钟权限：退化为 Doze 感知的非精确闹钟（仍会在维护窗口后补采）
+                    am.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAt, pi)
+                }
+            } catch (e: SecurityException) {
+                // 权限在判断后被回收等极端情况兜底，避免闪退
+                @Suppress("MissingPermission")
+                am.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAt, pi)
+            }
         } else {
             // API 21/22 无 while-idle 变体，退化为 setExact（仍远优于 postDelayed）
             @Suppress("MissingPermission")
-            am.setExact(AlarmManager.RTC_WAKEUP, nextTick, pi)
+            am.setExact(AlarmManager.RTC_WAKEUP, triggerAt, pi)
         }
     }
 

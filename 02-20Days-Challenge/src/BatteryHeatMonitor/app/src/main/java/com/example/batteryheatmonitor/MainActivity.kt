@@ -143,6 +143,22 @@ class MainActivity : AppCompatActivity() {
                 this, arrayOf(Manifest.permission.POST_NOTIFICATIONS), 100
             )
         }
+        // v1.7：精确闹钟权限（SCHEDULE_EXACT_ALARM）在 Android 13+ / 部分 OEM 默认不授予，
+        // 缺失时虽已退化为不崩溃的 setAndAllowWhileIdle，但 5 分钟刻度可能被 Doze 推迟。
+        // 这里主动引导用户去设置开启，保证每 5 分钟一格规整（开测前提醒，不阻塞开始）。
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            val am = getSystemService(Context.ALARM_SERVICE) as android.app.AlarmManager
+            if (!am.canScheduleExactAlarms()) {
+                Toast.makeText(
+                    this,
+                    "建议到「设置→应用→发热掉电监测→闹钟与提醒」开启精确闹钟权限，否则每5分钟采样可能被推迟",
+                    Toast.LENGTH_LONG
+                ).show()
+                try {
+                    startActivity(Intent(android.provider.Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM))
+                } catch (_: Exception) { /* 个别 ROM 无此入口，忽略 */ }
+            }
+        }
         val intent = Intent(this, MonitorService::class.java).apply {
             putExtra(MonitorService.EXTRA_SCENARIO, selectedScenario)
             putExtra(MonitorService.EXTRA_INTERVAL_MS, 5 * 60 * 1000L)

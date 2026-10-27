@@ -244,7 +244,7 @@
   10-18旧高帧率游戏3点已移入CSV备注备查
 - 课题02 同框照 **2/4**（短视频✅ 10-25竖屏刷视频/高帧率游戏✅ 10-25横屏游戏画面；
   待机、导航拍摄待拍）
-- **App 定时修复（v1.2 初修 + v1.3 根治 0min 残片 + v1.4 保证重启后每格不漏 + v1.5 精确闹钟根除 Doze 空档 + v1.6 用户点开始必开新会话）**：v1.2 解决
+- **App 定时修复（v1.2 初修 + v1.3 根治 0min 残片 + v1.4 保证重启后每格不漏 + v1.5 精确闹钟根除 Doze 空档 + v1.6 用户点开始必开新会话 + v1.7 修复点开始闪退）**：v1.2 解决
   "空档+残片"——根因旧版 `postDelayed` 递归链进程一死即断 + START_STICKY 重启时机不定 →
   7~45min 空档 + 重启 0min 残片；v1.2 三级保障：绝对网格调度 + 看门狗闹钟（`setAndAllowWhileIdle`
   免精确闹钟权限）+ 重启不盲采 + 30s 去重。**但 v1.2 仍残留 0min 残片**：其用
@@ -403,6 +403,23 @@
 - 教训：**用户显式动作的语义最高**，任何"防陈旧/防滥用"守卫都不得吞掉它——守卫只应作用于
   系统自动行为（重启/重投递/闹钟）；续接判旧要用"会话边界"（起点时间戳）圈定样本范围，
   不能拿全历史同工况数据当"本会话进度"
+
+### 9.11 点「开始监测」直接闪退（v1.7，2026-10-27 上午）
+- 现象：用户装 v1.6 后，点「开始监测（每5分钟采样）」App 立即闪退（进程被杀），而非像 v1.5
+  那样"不记录"。v1.5 能跑说明 manifest 的 foregroundServiceType / 权限声明没问题，闪退是
+  v1.5 起引入的精确闹钟调用在**采样线程未捕获异常**所致
+- 根因：v1.5 调度改用 `AlarmManager.setExactAndAllowWhileIdle`，该调用需要
+  `SCHEDULE_EXACT_ALARM` 权限；而 Android 13+ / 部分 OEM（小米/华为/OPPO 等）**默认不授予**
+  该权限、或用户在设置里关过 → 调用即抛 `SecurityException`。它发生在 HandlerThread 采样线程、
+  未被 try/catch 捕获，默认未捕获异常会**直接终止进程 → 闪退**
+- 修复（MonitorService.kt + MainActivity.kt，versionCode 7→8 / versionName 1.6→1.7）：
+  ① 新增 `safeScheduleExact()`：先查 `AlarmManager.canScheduleExactAlarms()`，未授予则退化为
+  `setAndAllowWhileIdle`（仍 Doze 感知、不崩溃，仅 5 分钟刻度极端情况下被推迟）；并对任何
+  `SecurityException` 兜底同样退化；② 在 `onStartCommand` 派发 `kickOff` 的 handler 回调外再包
+  一层 try/catch，任何采样链异常都只记 Log、绝不抛到线程顶层杀进程；③ MainActivity 开测前若
+  `!canScheduleExactAlarms()` 则 Toast 引导 + 跳转 `ACTION_REQUEST_SCHEDULE_EXACT_ALARM` 设置页，
+  让用户开启权限以保证每 5 分钟一格规整（不阻塞开始）
+- 验证待实机：装 v1.7 点开始应不再闪退；若 5 分钟刻度仍被推迟，确认是否已按引导开启精确闹钟权限
 
 ---
 
