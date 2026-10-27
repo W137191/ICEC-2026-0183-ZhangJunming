@@ -60,7 +60,7 @@ class MonitorService : Service() {
         const val CHANNEL_ID = "battery_monitor"
 
         internal const val PREFS = "monitor_session"
-        private const val KEY_START = "start_ts"
+        internal const val KEY_START = "start_ts"
         private const val KEY_SCENARIO = "scenario"
         private const val KEY_INTERVAL = "interval_ms"
         private const val KEY_MANUAL = "manual_temp"
