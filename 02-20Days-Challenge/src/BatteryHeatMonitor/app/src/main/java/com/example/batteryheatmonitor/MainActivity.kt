@@ -6,9 +6,12 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.BatteryManager
 import android.os.Build
 import android.os.Bundle
+import android.os.PowerManager
+import android.provider.Settings
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
@@ -159,6 +162,34 @@ class MainActivity : AppCompatActivity() {
                 } catch (_: Exception) { /* 个别 ROM 无此入口，忽略 */ }
             }
         }
+        // v1.8：申请电池优化白名单（Doze 豁免）——未豁免时熄屏后采样闹钟可能被推迟几十分钟
+        val pm = getSystemService(Context.POWER_SERVICE) as PowerManager
+        if (!pm.isIgnoringBatteryOptimizations(packageName)) {
+            try {
+                startActivity(
+                    Intent(
+                        Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS,
+                        Uri.parse("package:$packageName")
+                    )
+                )
+            } catch (_: Exception) { /* 个别 ROM 无此入口，忽略 */ }
+        }
+        // v1.8：国产 ROM 冻结后台 App 引导——iQOO/vivo/OPPO 等会把后台进程"冻结"（通知还在、
+        // 进程停摆，任何闹钟都不触发），表现为通知停在 0min、几十分钟不采样。代码无法绕过，
+        // 必须引导用户加白名单（只在点名开始时提示，不阻塞开始）。
+        val mfr = Build.MANUFACTURER ?: ""
+        val guide = when {
+            mfr.contains("vivo", true) || mfr.contains("iqoo", true) ->
+                "iQOO/vivo 手机请到：设置→电池→后台高耗电→允许本App；设置→应用与权限→自启动→允许本App；并在多任务界面下拉锁定本App卡片。否则熄屏后采样会被系统冻结"
+            mfr.contains("oppo", true) || mfr.contains("realme", true) || mfr.contains("oneplus", true) ->
+                "OPPO/一加 手机请到：设置→电池→更多设置→关闭本App的智能后台管控；设置→应用管理→自启动→允许本App；并在多任务界面锁定本App卡片"
+            mfr.contains("xiaomi", true) || mfr.contains("redmi", true) ->
+                "小米/红米 手机请到：设置→应用设置→应用管理→本App→省电策略→无限制，并开启自启动"
+            mfr.contains("huawei", true) || mfr.contains("honor", true) ->
+                "华为/荣耀 手机请到：设置→电池→更多电池设置，应用启动管理改为手动并允许自启动+后台运行"
+            else -> null
+        }
+        guide?.let { Toast.makeText(this, it, Toast.LENGTH_LONG).show() }
         val intent = Intent(this, MonitorService::class.java).apply {
             putExtra(MonitorService.EXTRA_SCENARIO, selectedScenario)
             putExtra(MonitorService.EXTRA_INTERVAL_MS, 5 * 60 * 1000L)

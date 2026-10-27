@@ -77,6 +77,8 @@ class MonitorService : Service() {
         private const val DEDUPE_WINDOW_MS = 30_000L
         /** 间隔下限保护，避免非法参数导致除零 / 密集采样 */
         private const val MIN_INTERVAL_MS = 60_000L
+        /** 备用闹钟比主闹钟晚触发 90 秒（部分 ROM 会静默丢弃单个精确闹钟） */
+        private const val BACKUP_DELAY_MS = 90_000L
     }
 
     private var thread: HandlerThread? = null
@@ -236,8 +238,16 @@ class MonitorService : Service() {
         if (tickIndex >= GRID_POINTS) return
         val nextTick = startTimestamp + tickIndex * intervalMs
         val am = getSystemService(Context.ALARM_SERVICE) as AlarmManager
-        val pi = tickPendingIntent()
-        safeScheduleExact(am, nextTick, pi)
+        // 主闹钟：该网格点准点触发（精确闹钟优先，无权限时退化为 while-idle）
+        safeScheduleExact(am, nextTick, tickPendingIntent(0))
+        // 备用闹钟：晚 90 秒的 while-idle 兜底（v1.8）——部分 ROM 会静默丢弃单个精确闹钟。
+        // 若主闹钟已正常采样，备用触发时 kickOff 的 maxElapsed 续接逻辑会发现该格已采而直接
+        // 排下一个点，天然去重、不会写出重复行；若主闹钟被 ROM 丢弃，则由备用补上，不漏格。
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            am.setAndAllowWhileIdle(
+                AlarmManager.RTC_WAKEUP, nextTick + BACKUP_DELAY_MS, tickPendingIntent(1)
+            )
+        }
     }
 
     /**
@@ -303,21 +313,22 @@ class MonitorService : Service() {
 
     // ---------- 精确闹钟：进程被杀 / 息屏后由系统唤起补采 ----------
 
-    private fun tickPendingIntent(): PendingIntent {
+    private fun tickPendingIntent(requestCode: Int): PendingIntent {
         val flags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         } else {
             PendingIntent.FLAG_UPDATE_CURRENT
         }
         return PendingIntent.getBroadcast(
-            this, 0, Intent(this, TickReceiver::class.java), flags
+            this, requestCode, Intent(this, TickReceiver::class.java), flags
         )
     }
 
-    /** 取消尚未触发的精确闹钟（用户主动停止或采满 30min 时调用，避免闹钟日后误唤起） */
+    /** 取消尚未触发的采样闹钟（用户主动停止或采满 30min 时调用，避免闹钟日后误唤起） */
     private fun cancelTickAlarm() {
         val am = getSystemService(Context.ALARM_SERVICE) as AlarmManager
-        am.cancel(tickPendingIntent())
+        am.cancel(tickPendingIntent(0))
+        am.cancel(tickPendingIntent(1))
     }
 
     private fun readBattery(): Pair<Int, Boolean> {

@@ -11,6 +11,8 @@
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <!-- 精确闹钟：v1.5 起用 setExactAndAllowWhileIdle 作主调度，API 31+ / targetSdk 34 必须持此权限（否则抛 SecurityException） -->
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+    <!-- 电池优化白名单：v1.8 申请 Doze 豁免，避免熄屏后采样闹钟被推迟（设置里可手动撤消） -->
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
     <!-- 项目三声振采集：录制麦克风音频 -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
 
