@@ -73,8 +73,6 @@ class MonitorService : Service() {
         private const val GRID_POINTS = 7
         /** 单次采样迟于网格点超过该值，就在备注里如实标注延迟（用于暴露系统仍推迟闹钟的情况） */
         private const val LATE_NOTE_THRESHOLD_MS = 90_000L
-        /** 去重窗口：30 秒内已有一条采样则跳过（闹钟 / 重启双路触发同一点保护） */
-        private const val DEDUPE_WINDOW_MS = 30_000L
         /** 间隔下限保护，避免非法参数导致除零 / 密集采样 */
         private const val MIN_INTERVAL_MS = 60_000L
         /** 备用闹钟比主闹钟晚触发 90 秒（部分 ROM 会静默丢弃单个精确闹钟） */
@@ -283,10 +281,12 @@ class MonitorService : Service() {
         // 网格点位置由 index 决定，elapsedMin 始终对齐 5 分钟网格（0/5/10…），
         // 不受"进程被杀后补采"的墙钟时间影响——保证每 5 分钟一格规整、不漏、不重
         val elapsedMin = (index * intervalMs / 60000).toInt()
-        // 去重：仅当"同一网格点(elapsedMin 相同) 且 30 秒内"才跳过（闹钟 / 重启双路触发同一点）；
-        // 不同网格点的补采互不干扰，确保进程被杀后一次性 / 级联补采不漏格
-        val last = SampleStore.loadAll(this).maxByOrNull { it.timestamp }
-        if (last != null && last.elapsedMin == elapsedMin && now - last.timestamp < DEDUPE_WINDOW_MS) return
+        // v1.9：去重改为「同一会话内、同一网格点已采过」则跳过——比 30 秒时间窗更稳，
+        // 可防止主闹钟 + 备用闹钟 + MainActivity 前台补采样三者把同一格写两遍，
+        // 也避免进程被杀后级联补采时把同一点写重复
+        if (SampleStore.loadAll(this)
+                .any { it.scenario == scenario && it.elapsedMin == elapsedMin && it.timestamp >= startTimestamp }
+        ) return
 
         val lateMs = now - (startTimestamp + index.toLong() * intervalMs)
         val note = if (lateMs > LATE_NOTE_THRESHOLD_MS) {

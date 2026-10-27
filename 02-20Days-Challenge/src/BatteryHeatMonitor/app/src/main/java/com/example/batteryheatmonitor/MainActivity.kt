@@ -10,9 +10,13 @@ import android.net.Uri
 import android.os.BatteryManager
 import android.os.Build
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.os.PowerManager
 import android.provider.Settings
 import android.widget.*
+import com.example.batteryheatmonitor.model.Sample
+import com.example.batteryheatmonitor.storage.SampleStore
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
@@ -38,6 +42,18 @@ class MainActivity : AppCompatActivity() {
     private var selectedScenario = "待机"
     private var monitoring = false
     private var manualTemp: Float? = null
+
+    // v1.9：前台保底采样——iQOO/vivo 会把后台 App 冻结（通知还亮着但进程停摆、闹钟不触发）。
+    // 当 App 本身处于前台（屏幕亮、用户在看）时，用主线程 Handler 每 60 秒自查并补齐当前网格点，
+    // 不依赖被冻结的后台闹钟，保证「手机亮屏 + App 开着」就能稳定每 5 分钟采样。
+    // 后台（已加白名单）仍由 MonitorService 的精确/备用闹钟负责；两者通过 session-grid 去重互不重复。
+    private val fgHandler = Handler(Looper.getMainLooper())
+    private val fgRunnable = object : Runnable {
+        override fun run() {
+            if (monitoring) ensureCurrentGridSampled()
+            fgHandler.postDelayed(this, 60_000L)
+        }
+    }
 
     private val batteryReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
@@ -204,6 +220,9 @@ class MainActivity : AppCompatActivity() {
         btnStartStop.text = "停止监测"
         btnStartStop.setBackgroundColor(0xFFFF5252.toInt())
         tvStatus.text = "监测中 · 工况：$selectedScenario · 每5分钟采样"
+        // v1.9：启动前台保底采样循环（屏幕亮、App 在前台时由 Handler 补采，抗系统冻结）
+        fgHandler.removeCallbacks(fgRunnable)
+        fgHandler.postDelayed(fgRunnable, 60_000L)
     }
 
     private fun stopMonitoring() {
@@ -212,6 +231,7 @@ class MainActivity : AppCompatActivity() {
             .edit().putBoolean(MonitorService.KEY_FORCE_FRESH, false).apply()
         stopService(Intent(this, MonitorService::class.java))
         monitoring = false
+        fgHandler.removeCallbacks(fgRunnable)
         btnStartStop.text = "开始监测（每5分钟采样）"
         btnStartStop.setBackgroundColor(0xFF03DAC5.toInt())
         tvStatus.text = "已停止"
@@ -263,7 +283,12 @@ class MainActivity : AppCompatActivity() {
             "${it.scenario} ${it.elapsedMin}min | ${it.batteryPct}% | ${String.format("%.1f", it.tempC)}℃ | ${sdf.format(Date(it.timestamp))}"
         }
         // 课题02 每工况目标 6 条（0/5/10/15/20/25/30min），进度可见才知何时采满
-        tvStatus.text = if (monitoring) "监测中 · 工况：$selectedScenario · 本工况 ${list.size}/6 条"
+        val lastTs = all.maxOfOrNull { it.timestamp } ?: 0
+        val ageText = if (monitoring && lastTs > 0) {
+            val age = (System.currentTimeMillis() - lastTs) / 1000
+            " · 上次采样 ${age}s 前"
+        } else ""
+        tvStatus.text = if (monitoring) "监测中 · 工况：$selectedScenario · 本工况 ${list.size}/6 条$ageText"
         else "未开始 · 共 ${all.size} 条（当前工况 ${list.size}/6 条）"
     }
 
@@ -278,11 +303,81 @@ class MainActivity : AppCompatActivity() {
             this, sampleReceiver, IntentFilter(MonitorService.ACTION_NEW_SAMPLE),
             ContextCompat.RECEIVER_NOT_EXPORTED
         )
+        // v1.9：回到前台且正在监测时，恢复前台保底采样循环
+        if (monitoring) {
+            fgHandler.removeCallbacks(fgRunnable)
+            fgHandler.postDelayed(fgRunnable, 60_000L)
+        }
     }
 
     override fun onPause() {
         super.onPause()
         unregisterReceiver(batteryReceiver)
         unregisterReceiver(sampleReceiver)
+        // v1.9：离开前台即停掉保底循环（后台交由 MonitorService 的闹钟负责；冻结时谁都救不了）
+        fgHandler.removeCallbacks(fgRunnable)
+    }
+
+    /**
+     * v1.9 前台保底：每 60 秒自查「当前 5 分钟网格点」是否已在本次会话采样，缺则补齐。
+     * 仅在 App 处于前台（屏幕亮、用户在看）时运行 —— 此时进程未被系统冻结，必定能采样；
+     * 这样即使后台闹钟被 iQOO/vivo 冻结，只要手机亮屏 + App 开着，数据照样每 5 分钟一格不漏。
+     * 与 MonitorService 的采样通过 session-grid 去重（同一会话同一网格点不重复写）。
+     */
+    private fun ensureCurrentGridSampled() {
+        val prefs = getSharedPreferences(MonitorService.PREFS, Context.MODE_PRIVATE)
+        val startTs = prefs.getLong(MonitorService.KEY_START, 0L)
+        if (startTs == 0L || !monitoring) return
+        val elapsedSec = (System.currentTimeMillis() - startTs) / 1000
+        val gridMin = ((elapsedSec / 300).toLong() * 5).toInt() // 0/5/10/.../30
+        if (gridMin > 30) return
+        val already = SampleStore.loadAll(this).any {
+            it.scenario == selectedScenario && it.elapsedMin == gridMin && it.timestamp >= startTs
+        }
+        if (already) return
+        val (pct, charging) = readPct()
+        val temp = readTemp()
+        val late = elapsedSec - gridMin * 60
+        // 若明显晚于网格点，备注如实标注（暴露系统闹钟被推迟/冻结），绝不伪装准时
+        val note = if (late > 90) "前台补采样(主闹钟可能被系统冻结或推迟)" else ""
+        val seq = SampleStore.loadAll(this).maxOfOrNull { it.id } ?: 0
+        SampleStore.add(
+            this,
+            Sample(
+                id = seq + 1,
+                scenario = selectedScenario,
+                elapsedMin = gridMin,
+                batteryPct = pct,
+                tempC = temp,
+                charging = charging,
+                note = note,
+                timestamp = System.currentTimeMillis()
+            )
+        )
+        sendBroadcast(Intent(MonitorService.ACTION_NEW_SAMPLE))
+        refreshList()
+    }
+
+    private fun readPct(): Pair<Int, Boolean> {
+        val intent = ContextCompat.registerReceiver(
+            this, null, IntentFilter(Intent.ACTION_BATTERY_CHANGED),
+            ContextCompat.RECEIVER_NOT_EXPORTED
+        ) ?: return 0 to false
+        val level = intent.getIntExtra(BatteryManager.EXTRA_LEVEL, -1)
+        val scale = intent.getIntExtra(BatteryManager.EXTRA_SCALE, -1)
+        val pct = if (level >= 0 && scale > 0) level * 100 / scale else 0
+        val status = intent.getIntExtra(BatteryManager.EXTRA_STATUS, -1)
+        val charging = status == BatteryManager.BATTERY_STATUS_CHARGING ||
+                status == BatteryManager.BATTERY_STATUS_FULL
+        return pct to charging
+    }
+
+    private fun readTemp(): Float {
+        val intent = ContextCompat.registerReceiver(
+            this, null, IntentFilter(Intent.ACTION_BATTERY_CHANGED),
+            ContextCompat.RECEIVER_NOT_EXPORTED
+        ) ?: return 0f
+        val raw = intent.getIntExtra(BatteryManager.EXTRA_TEMPERATURE, 0)
+        return raw / 10.0f
     }
 }
