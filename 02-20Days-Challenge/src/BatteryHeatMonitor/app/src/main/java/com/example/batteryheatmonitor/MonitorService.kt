@@ -40,6 +40,15 @@ import java.util.concurrent.atomic.AtomicLong
  *
  * v1.3 引入的 KEY_FORCE_FRESH：区分「用户主动点开始」与「系统因 START_STICKY 重投递 / 闹钟唤起而重启」，
  * 杜绝重启被误判为「新会话」→ 反复采 0min 残片。
+ *
+ * v1.6 关键修正（「用户点开始却整场不采样」实机回归，2026-10-27 00:15 复现）：
+ * 用户点击开始时若本地残留超过 6 小时的旧起点（KEY_START），v1.5 的 MAX_SESSION_MS 过期判定
+ * 会把用户的「全新会话」误判成「续接旧会话」→ kickOff 立刻一次性补满全部 6 个网格点
+ * （同一瞬间读数，六条数据完全相同）且网格随即判满、不再排程 → 整场监测温度/时间纹丝不动。
+ * 现改为：① 用户主动点开始**永远**开新会话（过期判定只约束系统重启续接）；
+ * ② 续接时若会话已过期则不补采、不排程，直接停服；
+ * ③ maxElapsed 只统计**本会话**（timestamp ≥ 起点）的样本，杜绝同工况上一场旧数据
+ * 把网格顶满 30 导致本场从头到尾不再采样。
  */
 class MonitorService : Service() {
 
@@ -98,7 +107,11 @@ class MonitorService : Service() {
         val priorStart = prefs.getLong(KEY_START, 0L)
         val sessionExpired = priorStart > 0 &&
             (System.currentTimeMillis() - priorStart) > MAX_SESSION_MS
-        val freshStart = forceFreshFlag && !sessionExpired
+        // v1.6：用户主动点开始永远开新会话——过期判定只约束"系统重启续接"，
+        // 绝不能反过来吞掉用户的全新会话（v1.5 实机回归：残留旧起点 >6h 时，
+        // 点开始被当续接 → 一瞬间补满 6 格且不再排程，整场温度/时间不动）
+        val freshStart = forceFreshFlag
+        val resumeExpired = !forceFreshFlag && sessionExpired
         if (forceFreshFlag) {
             prefs.edit().putBoolean(KEY_FORCE_FRESH, false).apply()
         }
@@ -148,19 +161,27 @@ class MonitorService : Service() {
         handler?.removeCallbacksAndMessages(null)
         tickIndex = 0
         // 采样与文件 IO 全部放到 handler 线程，主线程只做状态装配
-        handler?.post { kickOff(freshStart) }
+        handler?.post { kickOff(freshStart, resumeExpired) }
 
         return START_STICKY
     }
 
     /**
-     * 排定采样节奏（v1.3 引入 force_fresh 防 0min 残片；v1.4 保证重启后不漏格；v1.5 精确闹钟作主调度）：
+     * 排定采样节奏（v1.3 force_fresh 防 0min 残片；v1.4 重启不漏格；v1.5 精确闹钟主调度；
+     * v1.6 用户点开始必开新会话、续接只认本会话样本）：
      * - 全新会话：先采 0min 起点，再由 scheduleNext 从该时刻精确挂第 1 个网格点闹钟；
-     * - 被系统重建（START_STICKY 重投递 / 闹钟唤起）：从「已采样本最大 elapsedMin」之后续接，
-     *   **一次性把已到期却未采的网格点补采满**（每个点 elapsedMin 由 index 决定、互不相同，
+     * - 续接且会话已过期(>6h)：不补采陈旧网格、不排程，直接停服（v1.6）；
+     * - 被系统重建（START_STICKY 重投递 / 闹钟唤起）：从「本会话已采样本最大 elapsedMin」之后
+     *   续接，**一次性把已到期却未采的网格点补采满**（每个点 elapsedMin 由 index 决定、互不相同，
      *   不会被去重误删），再正常排程后续精确闹钟；已采满 30min 目标网格则停止排程。
      */
-    private fun kickOff(freshStart: Boolean) {
+    private fun kickOff(freshStart: Boolean, resumeExpired: Boolean) {
+        if (resumeExpired) {
+            // v1.6：系统在会话过期(>6h)后才唤醒续接 → 本次测量早已失效，
+            // 不补采陈旧网格、不再排程，直接停服等用户重新开始
+            stopSelf()
+            return
+        }
         if (freshStart) {
             sampleOnce(0)
             scheduleNext()
@@ -168,14 +189,16 @@ class MonitorService : Service() {
         }
         val intervalMin = intervalMs / 60000  // 5（分钟）
         val lastIdx = GRID_POINTS - 1  // 30min 目标对应索引 6
+        // v1.6：只统计「本会话」（timestamp ≥ 起点）的样本——同工况上一场的旧样本
+        // 不能把 maxElapsed 顶满 30，否则本场从头到尾都不会再采样
         val maxElapsed = SampleStore.loadAll(this)
-            .filter { it.scenario == scenario }
+            .filter { it.scenario == scenario && it.timestamp >= startTimestamp }
             .maxOfOrNull { it.elapsedMin } ?: -1
         if (maxElapsed >= lastIdx * intervalMin) {
-            // 已采满 30min 目标网格，停止后续排程（防止重启后越界重采已采点）
+            // 本会话已采满 30min 目标网格，停止后续排程（防止重启后越界重采已采点）
             return
         }
-        val startIdx = (maxElapsed / intervalMin).toInt() + 1
+        val startIdx = if (maxElapsed < 0) 0 else (maxElapsed / intervalMin).toInt() + 1
         val nowIdx = ((System.currentTimeMillis() - startTimestamp) / intervalMs).toInt()
         val endIdx = if (nowIdx < lastIdx) nowIdx else lastIdx
         // 把「已到期却还没采」的网格点一次性补采满（index 决定 elapsedMin，互不干扰、不漏）
