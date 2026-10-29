@@ -20,8 +20,6 @@ import com.example.batteryheatmonitor.storage.SampleStore
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import com.example.batteryheatmonitor.model.Sample
-import com.example.batteryheatmonitor.storage.SampleStore
 import com.example.batteryheatmonitor.sensing.SensingActivity
 import com.example.batteryheatmonitor.ui.LineChartView
 import com.example.batteryheatmonitor.util.CsvExporter
