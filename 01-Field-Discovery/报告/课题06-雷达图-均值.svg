@@ -1,0 +1,68 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="560" viewBox="0 0 760 560" font-family="sans-serif" font-size="14">
+<rect x="0" y="0" width="760" height="560" fill="#ffffff"/>
+<text x="380" y="34" font-size="20" font-weight="bold" text-anchor="middle">课题06 各点位噪声均值(dB) · 早/午/晚</text>
+<polygon points="290,261.429 317.173,281.171 306.794,313.115 273.206,313.115 262.827,281.171" fill="none" stroke="#e3e3e3"/>
+<text x="295" y="265.429" font-size="11" fill="#888" text-anchor="start">10</text>
+<polygon points="290,232.857 344.346,272.342 323.588,336.23 256.412,336.23 235.654,272.342" fill="none" stroke="#e3e3e3"/>
+<text x="295" y="236.857" font-size="11" fill="#888" text-anchor="start">20</text>
+<polygon points="290,204.286 371.519,263.513 340.382,359.344 239.618,359.344 208.481,263.513" fill="none" stroke="#e3e3e3"/>
+<text x="295" y="208.286" font-size="11" fill="#888" text-anchor="start">30</text>
+<polygon points="290,175.714 398.692,254.684 357.175,382.459 222.825,382.459 181.308,254.684" fill="none" stroke="#e3e3e3"/>
+<text x="295" y="179.714" font-size="11" fill="#888" text-anchor="start">40</text>
+<polygon points="290,147.143 425.865,245.855 373.969,405.574 206.031,405.574 154.135,245.855" fill="none" stroke="#e3e3e3"/>
+<text x="295" y="151.143" font-size="11" fill="#888" text-anchor="start">50</text>
+<polygon points="290,118.571 453.038,237.026 390.763,428.689 189.237,428.689 126.962,237.026" fill="none" stroke="#e3e3e3"/>
+<text x="295" y="122.571" font-size="11" fill="#888" text-anchor="start">60</text>
+<polygon points="290,90 480.211,228.197 407.557,451.803 172.443,451.803 99.7887,228.197" fill="none" stroke="#e3e3e3"/>
+<text x="295" y="94" font-size="11" fill="#888" text-anchor="start">70</text>
+<line x1="290" y1="290" x2="290" y2="90" stroke="#cccccc"/>
+<text x="290" y="64" font-size="14" font-weight="bold" text-anchor="middle" dominant-baseline="middle">图书馆</text>
+<line x1="290" y1="290" x2="480.211" y2="228.197" stroke="#cccccc"/>
+<text x="504.939" y="220.162" font-size="14" font-weight="bold" text-anchor="middle" dominant-baseline="middle">食堂</text>
+<line x1="290" y1="290" x2="407.557" y2="451.803" stroke="#cccccc"/>
+<text x="422.839" y="472.838" font-size="14" font-weight="bold" text-anchor="middle" dominant-baseline="middle">主干道</text>
+<line x1="290" y1="290" x2="172.443" y2="451.803" stroke="#cccccc"/>
+<text x="157.161" y="472.838" font-size="14" font-weight="bold" text-anchor="middle" dominant-baseline="middle">运动场</text>
+<line x1="290" y1="290" x2="99.7887" y2="228.197" stroke="#cccccc"/>
+<text x="75.0612" y="220.162" font-size="14" font-weight="bold" text-anchor="middle" dominant-baseline="middle">实训室走廊</text>
+<polygon points="290,191.714 448.691,238.438 376.824,409.503 189.909,427.764 137.287,240.381" fill="#2c7bb6" fill-opacity="0.18" stroke="#2c7bb6" stroke-width="2.5"/>
+<circle cx="290" cy="191.714" r="3" fill="#2c7bb6"/>
+<text x="294" y="187.714" font-size="10" fill="#2c7bb6">34.4</text>
+<circle cx="448.691" cy="238.438" r="3" fill="#2c7bb6"/>
+<text x="452.691" y="234.438" font-size="10" fill="#2c7bb6">58.4</text>
+<circle cx="376.824" cy="409.503" r="3" fill="#2c7bb6"/>
+<text x="380.824" y="405.503" font-size="10" fill="#2c7bb6">51.7</text>
+<circle cx="189.909" cy="427.764" r="3" fill="#2c7bb6"/>
+<text x="193.909" y="423.764" font-size="10" fill="#2c7bb6">59.6</text>
+<circle cx="137.287" cy="240.381" r="3" fill="#2c7bb6"/>
+<text x="141.287" y="236.381" font-size="10" fill="#2c7bb6">56.2</text>
+<polygon points="290,168.857 455.212,236.319 388.244,425.221 198.809,415.513 145.439,243.029" fill="#d7191c" fill-opacity="0.18" stroke="#d7191c" stroke-width="2.5"/>
+<circle cx="290" cy="168.857" r="3" fill="#d7191c"/>
+<text x="294" y="164.857" font-size="10" fill="#d7191c">42.4</text>
+<circle cx="455.212" cy="236.319" r="3" fill="#d7191c"/>
+<text x="459.212" y="232.319" font-size="10" fill="#d7191c">60.8</text>
+<circle cx="388.244" cy="425.221" r="3" fill="#d7191c"/>
+<text x="392.244" y="421.221" font-size="10" fill="#d7191c">58.5</text>
+<circle cx="198.809" cy="415.513" r="3" fill="#d7191c"/>
+<text x="202.809" y="411.513" font-size="10" fill="#d7191c">54.3</text>
+<circle cx="145.439" cy="243.029" r="3" fill="#d7191c"/>
+<text x="149.439" y="239.029" font-size="10" fill="#d7191c">53.2</text>
+<polygon points="290,157.429 435.919,242.588 387.236,423.835 209.054,401.413 166.634,249.916" fill="#1a9641" fill-opacity="0.18" stroke="#1a9641" stroke-width="2.5"/>
+<circle cx="290" cy="157.429" r="3" fill="#1a9641"/>
+<text x="294" y="153.429" font-size="10" fill="#1a9641">46.4</text>
+<circle cx="435.919" cy="242.588" r="3" fill="#1a9641"/>
+<text x="439.919" y="238.588" font-size="10" fill="#1a9641">53.7</text>
+<circle cx="387.236" cy="423.835" r="3" fill="#1a9641"/>
+<text x="391.236" y="419.835" font-size="10" fill="#1a9641">57.9</text>
+<circle cx="209.054" cy="401.413" r="3" fill="#1a9641"/>
+<text x="213.054" y="397.413" font-size="10" fill="#1a9641">48.2</text>
+<circle cx="166.634" cy="249.916" r="3" fill="#1a9641"/>
+<text x="170.634" y="245.916" font-size="10" fill="#1a9641">45.4</text>
+<rect x="540" y="110" width="16" height="16" fill="#2c7bb6"/>
+<text x="564" y="118" dominant-baseline="middle">早时段（dB）</text>
+<rect x="540" y="140" width="16" height="16" fill="#d7191c"/>
+<text x="564" y="148" dominant-baseline="middle">午时段（dB）</text>
+<rect x="540" y="170" width="16" height="16" fill="#1a9641"/>
+<text x="564" y="178" dominant-baseline="middle">晚时段（dB）</text>
+<text x="540" y="210" font-size="12" fill="#666">环：每环 10 dB；实训室走廊"午"为午后实测值</text>
+</svg>
