@@ -1,84 +1,89 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="760" height="480" viewBox="0 0 760 480" font-family="sans-serif" font-size="15">
-<rect x="0" y="0" width="760" height="480" fill="#ffffff"/>
-<text x="380" y="34" font-size="20" font-weight="bold" text-anchor="middle">课题02 各工况机身温度(℃)随时间变化</text>
-<line x1="72" y1="416" x2="610" y2="416" stroke="#e3e3e3"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="820" height="480" viewBox="0 0 820 480" font-family="sans-serif" font-size="15">
+<rect x="0" y="0" width="820" height="480" fill="#ffffff"/>
+<text x="410" y="34" font-size="20" font-weight="bold" text-anchor="middle">课题02 各工况机身温度(℃)随时间变化</text>
+<line x1="72" y1="416" x2="565" y2="416" stroke="#e3e3e3"/>
 <text x="64" y="416" text-anchor="end" dominant-baseline="middle" fill="#555">22</text>
-<line x1="72" y1="380.8" x2="610" y2="380.8" stroke="#e3e3e3"/>
+<line x1="72" y1="380.8" x2="565" y2="380.8" stroke="#e3e3e3"/>
 <text x="64" y="380.8" text-anchor="end" dominant-baseline="middle" fill="#555">23.6</text>
-<line x1="72" y1="345.6" x2="610" y2="345.6" stroke="#e3e3e3"/>
+<line x1="72" y1="345.6" x2="565" y2="345.6" stroke="#e3e3e3"/>
 <text x="64" y="345.6" text-anchor="end" dominant-baseline="middle" fill="#555">25.2</text>
-<line x1="72" y1="310.4" x2="610" y2="310.4" stroke="#e3e3e3"/>
+<line x1="72" y1="310.4" x2="565" y2="310.4" stroke="#e3e3e3"/>
 <text x="64" y="310.4" text-anchor="end" dominant-baseline="middle" fill="#555">26.8</text>
-<line x1="72" y1="275.2" x2="610" y2="275.2" stroke="#e3e3e3"/>
+<line x1="72" y1="275.2" x2="565" y2="275.2" stroke="#e3e3e3"/>
 <text x="64" y="275.2" text-anchor="end" dominant-baseline="middle" fill="#555">28.4</text>
-<line x1="72" y1="240" x2="610" y2="240" stroke="#e3e3e3"/>
+<line x1="72" y1="240" x2="565" y2="240" stroke="#e3e3e3"/>
 <text x="64" y="240" text-anchor="end" dominant-baseline="middle" fill="#555">30</text>
-<line x1="72" y1="204.8" x2="610" y2="204.8" stroke="#e3e3e3"/>
+<line x1="72" y1="204.8" x2="565" y2="204.8" stroke="#e3e3e3"/>
 <text x="64" y="204.8" text-anchor="end" dominant-baseline="middle" fill="#555">31.6</text>
-<line x1="72" y1="169.6" x2="610" y2="169.6" stroke="#e3e3e3"/>
+<line x1="72" y1="169.6" x2="565" y2="169.6" stroke="#e3e3e3"/>
 <text x="64" y="169.6" text-anchor="end" dominant-baseline="middle" fill="#555">33.2</text>
-<line x1="72" y1="134.4" x2="610" y2="134.4" stroke="#e3e3e3"/>
+<line x1="72" y1="134.4" x2="565" y2="134.4" stroke="#e3e3e3"/>
 <text x="64" y="134.4" text-anchor="end" dominant-baseline="middle" fill="#555">34.8</text>
-<line x1="72" y1="99.2" x2="610" y2="99.2" stroke="#e3e3e3"/>
+<line x1="72" y1="99.2" x2="565" y2="99.2" stroke="#e3e3e3"/>
 <text x="64" y="99.2" text-anchor="end" dominant-baseline="middle" fill="#555">36.4</text>
-<line x1="72" y1="64" x2="610" y2="64" stroke="#e3e3e3"/>
+<line x1="72" y1="64" x2="565" y2="64" stroke="#e3e3e3"/>
 <text x="64" y="64" text-anchor="end" dominant-baseline="middle" fill="#555">38</text>
 <line x1="72" y1="64" x2="72" y2="416" stroke="#e3e3e3"/>
 <text x="72" y="436" text-anchor="middle" fill="#555">0</text>
-<line x1="161.667" y1="64" x2="161.667" y2="416" stroke="#e3e3e3"/>
-<text x="161.667" y="436" text-anchor="middle" fill="#555">5</text>
-<line x1="251.333" y1="64" x2="251.333" y2="416" stroke="#e3e3e3"/>
-<text x="251.333" y="436" text-anchor="middle" fill="#555">10</text>
-<line x1="341" y1="64" x2="341" y2="416" stroke="#e3e3e3"/>
-<text x="341" y="436" text-anchor="middle" fill="#555">15</text>
-<line x1="430.667" y1="64" x2="430.667" y2="416" stroke="#e3e3e3"/>
-<text x="430.667" y="436" text-anchor="middle" fill="#555">20</text>
-<line x1="520.333" y1="64" x2="520.333" y2="416" stroke="#e3e3e3"/>
-<text x="520.333" y="436" text-anchor="middle" fill="#555">25</text>
-<line x1="610" y1="64" x2="610" y2="416" stroke="#e3e3e3"/>
-<text x="610" y="436" text-anchor="middle" fill="#555">30</text>
+<line x1="154.167" y1="64" x2="154.167" y2="416" stroke="#e3e3e3"/>
+<text x="154.167" y="436" text-anchor="middle" fill="#555">5</text>
+<line x1="236.333" y1="64" x2="236.333" y2="416" stroke="#e3e3e3"/>
+<text x="236.333" y="436" text-anchor="middle" fill="#555">10</text>
+<line x1="318.5" y1="64" x2="318.5" y2="416" stroke="#e3e3e3"/>
+<text x="318.5" y="436" text-anchor="middle" fill="#555">15</text>
+<line x1="400.667" y1="64" x2="400.667" y2="416" stroke="#e3e3e3"/>
+<text x="400.667" y="436" text-anchor="middle" fill="#555">20</text>
+<line x1="482.833" y1="64" x2="482.833" y2="416" stroke="#e3e3e3"/>
+<text x="482.833" y="436" text-anchor="middle" fill="#555">25</text>
+<line x1="565" y1="64" x2="565" y2="416" stroke="#e3e3e3"/>
+<text x="565" y="436" text-anchor="middle" fill="#555">30</text>
 <line x1="72" y1="64" x2="72" y2="416" stroke="#333" stroke-width="1.5"/>
-<line x1="72" y1="416" x2="610" y2="416" stroke="#333" stroke-width="1.5"/>
-<text x="341" y="468" text-anchor="middle" font-size="16">时间 (min)</text>
+<line x1="72" y1="416" x2="565" y2="416" stroke="#333" stroke-width="1.5"/>
+<text x="318" y="468" text-anchor="middle" font-size="16">时间 (min)</text>
 <text x="16" y="240" text-anchor="middle" font-size="16" transform="rotate(-90 16 240)">机身温度 (℃)</text>
-<polyline points="72,297.2 161.667,314.8 251.333,325.8 341,328 430.667,330.2 520.333,332.4 610,330.2" fill="none" stroke="#2c7bb6" stroke-width="2.5"/>
+<polyline points="72,297.2 154.167,314.8 236.333,325.8 318.5,328 400.667,330.2 482.833,332.4 565,330.2" fill="none" stroke="#2c7bb6" stroke-width="2.5"/>
 <circle cx="72" cy="297.2" r="3" fill="#2c7bb6"/>
-<circle cx="161.667" cy="314.8" r="3" fill="#2c7bb6"/>
-<circle cx="251.333" cy="325.8" r="3" fill="#2c7bb6"/>
-<circle cx="341" cy="328" r="3" fill="#2c7bb6"/>
-<circle cx="430.667" cy="330.2" r="3" fill="#2c7bb6"/>
-<circle cx="520.333" cy="332.4" r="3" fill="#2c7bb6"/>
-<circle cx="610" cy="330.2" r="3" fill="#2c7bb6"/>
-<polyline points="72,303.8 161.667,240 251.333,209.2 341,178.4 430.667,154.2 520.333,141 610,127.8" fill="none" stroke="#d7191c" stroke-width="2.5"/>
+<circle cx="154.167" cy="314.8" r="3" fill="#2c7bb6"/>
+<circle cx="236.333" cy="325.8" r="3" fill="#2c7bb6"/>
+<circle cx="318.5" cy="328" r="3" fill="#2c7bb6"/>
+<circle cx="400.667" cy="330.2" r="3" fill="#2c7bb6"/>
+<circle cx="482.833" cy="332.4" r="3" fill="#2c7bb6"/>
+<circle cx="565" cy="330.2" r="3" fill="#2c7bb6"/>
+<polyline points="72,303.8 154.167,240 236.333,209.2 318.5,178.4 400.667,154.2 482.833,141 565,127.8" fill="none" stroke="#d7191c" stroke-width="2.5"/>
 <circle cx="72" cy="303.8" r="3" fill="#d7191c"/>
-<circle cx="161.667" cy="240" r="3" fill="#d7191c"/>
-<circle cx="251.333" cy="209.2" r="3" fill="#d7191c"/>
-<circle cx="341" cy="178.4" r="3" fill="#d7191c"/>
-<circle cx="430.667" cy="154.2" r="3" fill="#d7191c"/>
-<circle cx="520.333" cy="141" r="3" fill="#d7191c"/>
-<circle cx="610" cy="127.8" r="3" fill="#d7191c"/>
-<polyline points="72,356.6 161.667,244.4 251.333,156.4 341,167.4 430.667,211.4 520.333,240 610,255.4" fill="none" stroke="#1a9641" stroke-width="2.5"/>
+<circle cx="154.167" cy="240" r="3" fill="#d7191c"/>
+<circle cx="236.333" cy="209.2" r="3" fill="#d7191c"/>
+<circle cx="318.5" cy="178.4" r="3" fill="#d7191c"/>
+<circle cx="400.667" cy="154.2" r="3" fill="#d7191c"/>
+<circle cx="482.833" cy="141" r="3" fill="#d7191c"/>
+<circle cx="565" cy="127.8" r="3" fill="#d7191c"/>
+<polyline points="72,356.6 154.167,244.4 236.333,156.4 318.5,167.4 400.667,211.4 482.833,240 565,255.4" fill="none" stroke="#1a9641" stroke-width="2.5"/>
 <circle cx="72" cy="356.6" r="3" fill="#1a9641"/>
-<circle cx="161.667" cy="244.4" r="3" fill="#1a9641"/>
-<circle cx="251.333" cy="156.4" r="3" fill="#1a9641"/>
-<circle cx="341" cy="167.4" r="3" fill="#1a9641"/>
-<circle cx="430.667" cy="211.4" r="3" fill="#1a9641"/>
-<circle cx="520.333" cy="240" r="3" fill="#1a9641"/>
-<circle cx="610" cy="255.4" r="3" fill="#1a9641"/>
-<polyline points="72,215.8 161.667,191.6 251.333,215.8 341,240 430.667,244.4 520.333,251 610,226.8" fill="none" stroke="#762a83" stroke-width="2.5"/>
+<circle cx="154.167" cy="244.4" r="3" fill="#1a9641"/>
+<circle cx="236.333" cy="156.4" r="3" fill="#1a9641"/>
+<circle cx="318.5" cy="167.4" r="3" fill="#1a9641"/>
+<circle cx="400.667" cy="211.4" r="3" fill="#1a9641"/>
+<circle cx="482.833" cy="240" r="3" fill="#1a9641"/>
+<circle cx="565" cy="255.4" r="3" fill="#1a9641"/>
+<polyline points="72,215.8 154.167,191.6 236.333,215.8 318.5,240 400.667,244.4 482.833,251 565,226.8" fill="none" stroke="#762a83" stroke-width="2.5"/>
 <circle cx="72" cy="215.8" r="3" fill="#762a83"/>
-<circle cx="161.667" cy="191.6" r="3" fill="#762a83"/>
-<circle cx="251.333" cy="215.8" r="3" fill="#762a83"/>
-<circle cx="341" cy="240" r="3" fill="#762a83"/>
-<circle cx="430.667" cy="244.4" r="3" fill="#762a83"/>
-<circle cx="520.333" cy="251" r="3" fill="#762a83"/>
-<circle cx="610" cy="226.8" r="3" fill="#762a83"/>
-<rect x="634" y="72" width="14" height="14" fill="#2c7bb6"/>
-<text x="654" y="79" dominant-baseline="middle">待机</text>
-<rect x="634" y="96" width="14" height="14" fill="#d7191c"/>
-<text x="654" y="103" dominant-baseline="middle">短视频</text>
-<rect x="634" y="120" width="14" height="14" fill="#1a9641"/>
-<text x="654" y="127" dominant-baseline="middle">导航/拍摄</text>
-<rect x="634" y="144" width="14" height="14" fill="#762a83"/>
-<text x="654" y="151" dominant-baseline="middle">高帧率游戏</text>
+<circle cx="154.167" cy="191.6" r="3" fill="#762a83"/>
+<circle cx="236.333" cy="215.8" r="3" fill="#762a83"/>
+<circle cx="318.5" cy="240" r="3" fill="#762a83"/>
+<circle cx="400.667" cy="244.4" r="3" fill="#762a83"/>
+<circle cx="482.833" cy="251" r="3" fill="#762a83"/>
+<circle cx="565" cy="226.8" r="3" fill="#762a83"/>
+<rect x="589" y="72" width="14" height="14" fill="#2c7bb6"/>
+<text x="609" y="79" dominant-baseline="middle">待机</text>
+<rect x="589" y="96" width="14" height="14" fill="#d7191c"/>
+<text x="609" y="103" dominant-baseline="middle">短视频</text>
+<rect x="589" y="120" width="14" height="14" fill="#1a9641"/>
+<text x="609" y="127" dominant-baseline="middle">导航/拍摄</text>
+<rect x="589" y="144" width="14" height="14" fill="#762a83"/>
+<text x="609" y="151" dominant-baseline="middle">高帧率游戏</text>
+<rect x="589" y="182" width="220" height="76" fill="#fffbe6" stroke="#e0c200" rx="6"/>
+<text x="599" y="200" font-size="13" font-weight="bold" fill="#9a7b00">Step4 标注</text>
+<text x="599" y="220" font-size="12" fill="#d7191c">温度最高：短视频35.1℃</text>
+<text x="599" y="238" font-size="12" fill="#1a9641">其次：导航33.8℃/游戏32.2℃</text>
+<text x="599" y="256" font-size="12" fill="#2c7bb6">待机最低 峰值27.4℃</text>
 </svg>
