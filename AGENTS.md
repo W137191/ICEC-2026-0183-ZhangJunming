@@ -297,9 +297,9 @@
 - APK 在 Release `apk-latest`；`src/fft_features.py` **已验证**（2026-11-02）：新增 `src/selftest.py`
   一键自测，合成样本验证音频+加速度双路径特征提取正确，并修复加速度 CSV 表头/时间戳解析
   bug（原 `np.loadtxt` 不跳表头，真实含"含时间戳"表头会整列失败）
+- **脚手架已齐**（2026-11-02 深夜）：`raw_data/采集记录索引.csv` 预填 75 行（设备/条件常数列，采后补日期/文件名/备注）；新增 `src/check_collected.py`（零依赖进度校验：扫 WAV/CSV 配对，报各工况 X/15 与全局 X/75、排查缺配对）；新增 `报告/盲测与抗噪报告模板.md`（评分项③骨架，含待填占位）。
 - 采集进度 **0/75 组**；process_logs 已有 5 篇（10-13 / 10-17 / 10-22 / 10-24 / 10-25）
-- 下一步：装 APK → 采第 1 组样例（工况1·风扇正常）跑 `python src/fft_features.py extract`
-  → 铺满 75 组 → 每日 process_logs + 同框实验照（人+设备+手机）
+- 下一步（需真机，AI 无法代采）：装 APK(`apk-latest`) → 采第 1 组样例（工况1·风扇正常）跑 `python src/check_collected.py` 看进度 + `python src/fft_features.py extract` 验特征 → 铺满 75 组（每采一批跑 check_collected）→ 每工况≥1 张本人+设备+手机同框实验照 → 每日 process_logs
 
 **仓库工程**：
 - Google 风格标准已全量落地（`dfacc14` / `1ada191` / `909f66b` / `c12bb7f`）
