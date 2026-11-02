@@ -48,7 +48,9 @@
 │   └── 采集记录索引.csv   # 序号 / 工况 / 组号 / 文件 / 备注
 ├── src/
 │   ├── fft_features.py   # FFT 特征提取 + 基线分类（AI 辅助编写）
+│   ├── selftest.py       # 一键自测：合成样本验证音频+加速度特征管线
 │   └── requirements.txt
+├── raw_data/features.csv # extract 输出（已 gitignore，由 WAV/CSV 重新生成）
 ├── 实验照/              # 本人同框实验照 + 设备布置照
 └── 报告/               # 盲测视频 + 抗噪报告
 ```
@@ -56,6 +58,14 @@
 ## 五、下一步（待启动）
 
 1. 确定采集 App（麦克风录音 + 加速度计记录；可沿用阶段一自研 App 扩展，或用现成 App）。
-2. 跑通 1 组样例 → 验证 `src/fft_features.py` 能出特征。
+2. ✅ 已验证：`python src/selftest.py` 一键通过（合成样本验证音频+加速度双路径，见下方「代码验证」）。下一步为真实采第 1 组样例。
 3. 按 `raw_data/采集记录索引.csv` 模板铺满 75 组。
 4. 每日写 `../process_logs/YYYY-MM-DD.md`（评分“防摆拍”硬要求）。
+
+## 六、代码验证（FFT 特征提取）
+
+- `src/fft_features.py` 的 `extract` 管线已用合成数据自测通过：
+  - **音频**：注入 100Hz 基频 + 谐波，提取 `audio_dom_freq≈100Hz`、`centroid/rolloff/low_ratio` 均合理。
+  - **加速度**：注入 x=30Hz / y=12Hz / z=8Hz 振动，提取 `acc_x/y/z_dom` 与 `acc_mag_rms` 正确。
+  - **CSV 兼容性**：无表头（ax,ay,az）与含时间戳表头（t,ax,ay,az，与实验方案「含时间戳」一致）两种布局均正确解析。
+- 运行方式：`python src/selftest.py`（生成临时样本 → 跑真实 extract → 断言关键特征 → 清理，不污染 raw_data）。

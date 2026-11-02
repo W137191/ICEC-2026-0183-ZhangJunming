@@ -294,9 +294,11 @@
   已到期未采网格点一次性补采满；v1.5 主调度改 `setExactAndAllowWhileIdle` 精确闹钟根除 Doze
   空档；v1.6 根治"用户点开始被当续接旧会话→瞬间补满 6 格且整场不再采样"的实机回归，
   见 9.10）
-- APK 在 Release `apk-latest`；`src/fft_features.py` 就绪待验证
+- APK 在 Release `apk-latest`；`src/fft_features.py` **已验证**（2026-11-02）：新增 `src/selftest.py`
+  一键自测，合成样本验证音频+加速度双路径特征提取正确，并修复加速度 CSV 表头/时间戳解析
+  bug（原 `np.loadtxt` 不跳表头，真实含"含时间戳"表头会整列失败）
 - 采集进度 **0/75 组**；process_logs 已有 5 篇（10-13 / 10-17 / 10-22 / 10-24 / 10-25）
-- 下一步：装 APK → 采第 1 组样例（工况1·风扇正常）验证 `fft_features.py` extract
+- 下一步：装 APK → 采第 1 组样例（工况1·风扇正常）跑 `python src/fft_features.py extract`
   → 铺满 75 组 → 每日 process_logs + 同框实验照（人+设备+手机）
 
 **仓库工程**：

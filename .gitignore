@@ -20,6 +20,11 @@ __pycache__/
 *.tmp
 *.log
 
+# ===== 项目三 fft_features.py 生成产物 / 自测目录（非源数据，勿提交） =====
+项目三-手机声振诊断/raw_data/features.csv
+项目三-手机声振诊断/raw_data/_selftest/
+# 真实采集的 WAV/CSV 是交付物，保持追踪（不忽略）。
+
 # ===== 安卓 / Gradle 构建产物（BatteryHeatMonitor） =====
 *.iml
 .gradle/

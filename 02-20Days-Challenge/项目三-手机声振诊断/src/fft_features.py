@@ -12,6 +12,10 @@
 说明：当前仓库暂无原始数据，extract 在 raw_data 下找不到文件时会给出
 指引，不会报错。采集 App 确定后（麦克风录音 + 加速度计记录），把同名
 .wav/.csv 成对放入 raw_data/工况*/ 即可直接跑。
+
+加速度 CSV 兼容两种布局：无表头时前 3 列为 ax,ay,az；含表头时按列名匹配
+ax/ay/az，并允许首列为时间戳（t,ax,ay,az，与实验方案「含时间戳」一致）。
+运行 `python selftest.py` 可用合成样本一键验证音频+加速度特征提取管线。
 """
 
 import argparse
@@ -80,30 +84,62 @@ def accel_features(csv_path: str) -> Optional[Dict[str, float]]:
     """提取单个加速度 CSV 的三轴时域/频域特征。
 
     Args:
-        csv_path: CSV 文件路径（前 3 列 ax,ay,az，由采集 App 生成）。
+        csv_path: CSV 文件路径。支持两种布局：无表头时前 3 列为
+            ax,ay,az；含表头时按列名匹配 ax/ay/az（允许首列为时间戳，
+            如 ``t,ax,ay,az``，与实验方案「含时间戳」一致）。
 
     Returns:
         特征名字典（键如 acc_x_rms/acc_mag_rms）；读取失败或数据为空时
         返回 None。
     """
     try:
-        # 兼容带/不带表头：自动检测。
-        data = np.loadtxt(csv_path, delimiter=",", usecols=(0, 1, 2))
-    except Exception as e:
+        with open(csv_path, "r", encoding="utf-8") as fh:
+            rows = list(csv.reader(fh))
+    except Exception as e:  # noqa: BLE001
         print(f"  [skip] 读加速度失败 {os.path.basename(csv_path)}: {e}")
         return None
-    if data.size == 0:
+    if not rows:
         return None
-    if data.ndim == 1:
-        data = data.reshape(-1, 3)
+    # 首行含非数字单元格 -> 视为表头。
+    header = None
+    start = 0
+    try:
+        float(rows[0][0])
+    except (ValueError, IndexError):
+        header = rows[0]
+        start = 1
+    if header is not None:
+        low = [h.strip().lower() for h in header]
+        cols: List[int] = []
+        for name in ("ax", "ay", "az"):
+            if name in low:
+                cols.append(low.index(name))
+        if len(cols) != 3:
+            # 未匹配到轴名：含时间戳取 1,2,3，否则取前 3 列。
+            cols = [1, 2, 3] if len(header) >= 4 else [0, 1, 2]
+    else:
+        cols = [0, 1, 2]
+    data: List[List[float]] = []
+    for r in rows[start:]:
+        try:
+            data.append([float(r[c]) for c in cols])
+        except (ValueError, IndexError):
+            continue
+    if not data:
+        return None
+    data_arr = np.array(data, dtype=np.float32)
+    if data_arr.ndim == 1:
+        data_arr = data_arr.reshape(-1, 3)
+    if data_arr.shape[1] != 3:
+        return None
     feats: Dict[str, float] = {}
     for i, ax in enumerate("xyz"):
-        col = data[:, i] - np.mean(data[:, i])
+        col = data_arr[:, i] - np.mean(data_arr[:, i])
         feats[f"acc_{ax}_rms"] = float(np.sqrt(np.mean(col**2)))
         spec = np.abs(np.fft.rfft(col))
         f = np.fft.rfftfreq(len(col), 1.0 / SR_ACCEL)
         feats[f"acc_{ax}_dom"] = float(f[int(np.argmax(spec))]) if spec.sum() > 0 else 0.0
-    mag = np.sqrt(data[:, 0] ** 2 + data[:, 1] ** 2 + data[:, 2] ** 2)
+    mag = np.sqrt(data_arr[:, 0] ** 2 + data_arr[:, 1] ** 2 + data_arr[:, 2] ** 2)
     feats["acc_mag_rms"] = float(np.sqrt(np.mean(mag**2)))
     return feats
 
