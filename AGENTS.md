@@ -495,6 +495,23 @@
   ③ 若平板为 HarmonyOS NEXT（纯鸿蒙、无 Android 兼容层）则无法运行 Android APK，
   但 MRX-W09 为 Android 兼容层机型，可正常安装。
 
+### 9.15 v1.9.2 华为平板崩溃修复 + 崩溃自检器（2026-11-03 晚）
+- 现象：平板（HarmonyOS 4.2.0，≈Android 12）装 1.9.1 后弹"发热掉电监测 屡次停止运行"（反复 force-close）。
+  手机（Android 14/15）正常，故判为 **API 级别差异**导致的设备特定崩溃。
+- 最可能根因：`MainActivity.onResume` / `readPct` / `readTemp` / `SensingActivity.readBattery` 用
+  `ContextCompat.registerReceiver(..., RECEIVER_NOT_EXPORTED)` 注册 `ACTION_BATTERY_CHANGED`
+  （受保护广播）。个别 HarmonyOS/ROM 对此注册策略不同，可能直接抛异常使 App 在 resume/读数时崩。
+- 修复：
+  1. **崩溃自检器**（`App.kt`，新建 Application 类并在 Manifest 注册 `android:name=".App"`）：
+     全局 `Thread.setDefaultUncaughtExceptionHandler` 把完整堆栈写入 `filesDir/last_crash.txt`，
+     下次冷启动 `MainActivity` 读到即弹窗显示错误文本（无需 adb 即可拿堆栈定位）。
+  2. **加固所有电池广播注册**：上述 4 处 `registerReceiver` 全部包 `try/catch` 兜底，
+     注册失败不再导致整个 App 崩溃（仅本页电量/温度刷新走不到，不影响采集主流程）。
+  3. `MainActivity.onCreate` 开头先 `showLastCrashIfAny()`，有上次崩溃记录则弹窗并中止本次初始化，避免再次走进崩溃点。
+  4. versionCode 11→12 / versionName 1.9.1→1.9.2。
+- 平板验证建议：覆盖安装 1.9.2；若仍崩，弹窗会直接显示异常类名+信息，**把那段文字发回即可精准定位**
+  （无需 adb logcat）。
+
 ---
 
 ## 10. 常用命令速查
