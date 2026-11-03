@@ -65,7 +65,7 @@ class SensingActivity : AppCompatActivity() {
 
     private val conds = listOf(
         Cond("工况1-电风扇正常低速", "风扇", "正常"),
-        Cond("工况2-电风扇扇叶失衡", "风扇", "失衡"),
+        Cond("工况2-电风扇进风遮挡", "风扇", "遮挡"),
         Cond("工况3-电风扇高速", "风扇", "高速"),
         Cond("工况4-吹风机冷风", "吹风", "冷风"),
         Cond("工况5-吹风机热风", "吹风", "热风")

@@ -1,12 +1,13 @@
-"""项目三 · fft_features.py 自测（可重复运行，不污染真实采集目录）。
+"""项目三 · fft_features.py 自测（可重复运行，完全隔离、不污染真实采集目录）。
 
 自测流程：
-  1. 在 raw_data/_selftest 下生成一对合成样本（3 列 / 4 列含时间戳两种
-     加速度 CSV 布局，音频均为 100Hz 基频 + 谐波）。
-  2. 通过子进程调用 `python fft_features.py extract` 跑真实特征管线。
-  3. 读取生成的 features.csv，断言关键特征符合注入信号（audio_dom_freq≈100、
-     acc_x_dom≈30）。
-  4. 清理 _selftest 与 features.csv，保持 raw_data 干净。
+  1. 在系统临时目录下生成一对合成样本（3 列 / 4 列含时间戳两种加速度 CSV
+     布局，音频均为 100Hz 基频 + 谐波）。
+  2. 将 fft_features 的 RAW 指向该临时目录（隔离真实 raw_data），就地调用
+     ``cmd_extract()`` 跑真实特征管线。
+  3. 读取临时目录内的 features.csv，断言关键特征符合注入信号
+     （audio_dom_freq≈100、acc_x_dom≈30）。
+  4. 清理临时目录，真实 raw_data 与 features.csv 不受影响。
 
 用法：
   python selftest.py
@@ -18,14 +19,11 @@ import math
 import os
 import shutil
 import struct
-import subprocess
 import sys
 import tempfile
 import wave
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-RAW = os.path.abspath(os.path.join(HERE, "..", "raw_data"))
-SELFTEST_DIR = os.path.join(RAW, "_selftest")
 SR_AUDIO = 16000
 SR_ACCEL = 100
 DUR = 6  # 秒，自测够用。
@@ -76,73 +74,60 @@ def _accel_csv(path: str, with_time: bool) -> None:
                 w.writerow([f"{ax:.4f}", f"{ay:.4f}", f"{az:.4f}"])
 
 
-def _cleanup() -> None:
-    if os.path.isdir(SELFTEST_DIR):
-        shutil.rmtree(SELFTEST_DIR)
-    feat = os.path.join(RAW, "features.csv")
-    if os.path.exists(feat):
-        os.remove(feat)
-
-
 def main() -> int:
-    """生成样本、跑 extract、断言特征，返回进程退出码。"""
-    _cleanup()
-    os.makedirs(SELFTEST_DIR, exist_ok=True)
-    specs = [
-        ("风扇_正常_01_20261102-1200", False),
-        ("风扇_失衡_02_20261102-1210", True),
-    ]
-    for name, with_time in specs:
-        base = os.path.join(SELFTEST_DIR, name)
-        _audio_wav(base + ".wav")
-        _accel_csv(base + ".csv", with_time)
+    """生成隔离样本、跑 extract、断言特征，返回进程退出码。"""
+    import fft_features
 
-    rc = subprocess.run(
-        [sys.executable, os.path.join(HERE, "fft_features.py"), "extract"],
-        cwd=HERE,
-    ).returncode
-    if rc != 0:
-        print("[FAIL] extract 进程退出码非 0")
-        _cleanup()
-        return 1
+    tmp = tempfile.mkdtemp(prefix="p3_selftest_")
+    try:
+        specs = [
+            ("风扇_正常_01_20261102-1200", False),
+            ("风扇_遮挡_02_20261102-1210", True),
+        ]
+        for name, with_time in specs:
+            base = os.path.join(tmp, name)
+            _audio_wav(base + ".wav")
+            _accel_csv(base + ".csv", with_time)
 
-    feat = os.path.join(RAW, "features.csv")
-    if not os.path.exists(feat):
-        print("[FAIL] 未生成 features.csv")
-        _cleanup()
-        return 1
+        # 隔离：将 fft_features 的 RAW 指向临时目录，避免扫描到真实采集数据。
+        fft_features.RAW = tmp
+        fft_features.cmd_extract()
 
-    with open(feat, "r", encoding="utf-8") as f:
-        rows = list(csv.DictReader(f))
-    if len(rows) != 2:
-        print(f"[FAIL] 期望 2 条特征，实际 {len(rows)} 条")
-        _cleanup()
-        return 1
+        feat = os.path.join(tmp, "features.csv")
+        if not os.path.exists(feat):
+            print("[FAIL] 未生成 features.csv")
+            return 1
+        with open(feat, "r", encoding="utf-8") as f:
+            rows = list(csv.DictReader(f))
+        if len(rows) != 2:
+            print(f"[FAIL] 期望 2 条特征，实际 {len(rows)} 条")
+            return 1
 
-    ok = True
-    for r in rows:
-        try:
-            dom = float(r["audio_dom_freq"])
-            axd = float(r["acc_x_dom"])
-            ayd = float(r["acc_y_dom"])
-            azd = float(r["acc_z_dom"])
-        except (KeyError, ValueError, TypeError) as e:
-            print(f"[FAIL] 特征缺失/解析失败: {e}")
-            ok = False
-            break
-        # 音频主频应接近注入的 100Hz；加速度主频应接近 30/12/8Hz。
-        if not (90 <= dom <= 110):
-            print(f"[FAIL] audio_dom_freq={dom:.1f} 不在 [90,110]")
-            ok = False
-            break
-        if not (25 <= axd <= 35 and 8 <= ayd <= 16 and 5 <= azd <= 12):
-            print(f"[FAIL] 加速度主频异常 ax={axd} ay={ayd} az={azd}")
-            ok = False
-            break
+        ok = True
+        for r in rows:
+            try:
+                dom = float(r["audio_dom_freq"])
+                axd = float(r["acc_x_dom"])
+                ayd = float(r["acc_y_dom"])
+                azd = float(r["acc_z_dom"])
+            except (KeyError, ValueError, TypeError) as e:
+                print(f"[FAIL] 特征缺失/解析失败: {e}")
+                ok = False
+                break
+            # 音频主频应接近注入的 100Hz；加速度主频应接近 30/12/8Hz。
+            if not (90 <= dom <= 110):
+                print(f"[FAIL] audio_dom_freq={dom:.1f} 不在 [90,110]")
+                ok = False
+                break
+            if not (25 <= axd <= 35 and 8 <= ayd <= 16 and 5 <= azd <= 12):
+                print(f"[FAIL] 加速度主频异常 ax={axd} ay={ayd} az={azd}")
+                ok = False
+                break
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
 
-    _cleanup()
     if ok:
-        print("[PASS] fft_features.py 音频+加速度特征提取均正常（双布局 CSV）。")
+        print("[PASS] fft_features.py 音频+加速度特征提取均正常（双布局 CSV，已隔离真实数据）。")
         return 0
     return 1
 
