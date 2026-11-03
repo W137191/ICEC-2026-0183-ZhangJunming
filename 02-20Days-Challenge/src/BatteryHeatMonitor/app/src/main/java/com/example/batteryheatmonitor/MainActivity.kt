@@ -15,6 +15,7 @@ import android.os.Looper
 import android.os.PowerManager
 import android.provider.Settings
 import android.widget.*
+import android.app.AlertDialog
 import com.example.batteryheatmonitor.model.Sample
 import com.example.batteryheatmonitor.storage.SampleStore
 import androidx.appcompat.app.AppCompatActivity
@@ -75,6 +76,8 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // 若上一次崩溃留有记录，先弹窗显示错误文本（用户可截图/抄送给我精准定位），不再继续走会崩的初始化
+        if (showLastCrashIfAny()) return
         setContentView(R.layout.activity_main)
 
         tvBattery = findViewById(R.id.tvBattery)
@@ -92,6 +95,25 @@ class MainActivity : AppCompatActivity() {
         setupExportClear()
         setupSensingEntry()
         refreshList()
+    }
+
+    /**
+     * 读取上次崩溃记录并弹窗显示（由 App 全局异常处理器写入 filesDir/last_crash.txt）。
+     * 返回 true 表示已弹窗并应中止本次 onCreate（避免再次走到会崩的初始化）。
+     */
+    private fun showLastCrashIfAny(): Boolean {
+        val f = File(filesDir, "last_crash.txt")
+        if (!f.exists()) return false
+        val text = f.readText()
+        f.delete()
+        val shown = if (text.length > 4000) text.take(4000) + "\n…(已截断，完整内容见文件)" else text
+        AlertDialog.Builder(this)
+            .setTitle("上次崩溃记录（请把内容发我定位）")
+            .setMessage(shown)
+            .setCancelable(false)
+            .setPositiveButton("知道了") { d, _ -> d.dismiss(); finish() }
+            .show()
+        return true
     }
 
     private fun setupScenarioButtons() {
@@ -292,15 +314,18 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        // Android 14+ 必须显式声明接收器是否导出，否则 registerReceiver 抛 IllegalArgumentException 直接崩
-        ContextCompat.registerReceiver(
-            this, batteryReceiver, IntentFilter(Intent.ACTION_BATTERY_CHANGED),
-            ContextCompat.RECEIVER_NOT_EXPORTED
-        )
-        ContextCompat.registerReceiver(
-            this, sampleReceiver, IntentFilter(MonitorService.ACTION_NEW_SAMPLE),
-            ContextCompat.RECEIVER_NOT_EXPORTED
-        )
+        // 个别 HarmonyOS/ROM 对受保护广播的注册策略不同，注册失败绝不应导致整个 App 崩溃，故兜底
+        try {
+            // Android 14+ 必须显式声明接收器是否导出，否则 registerReceiver 抛 IllegalArgumentException 直接崩
+            ContextCompat.registerReceiver(
+                this, batteryReceiver, IntentFilter(Intent.ACTION_BATTERY_CHANGED),
+                ContextCompat.RECEIVER_NOT_EXPORTED
+            )
+            ContextCompat.registerReceiver(
+                this, sampleReceiver, IntentFilter(MonitorService.ACTION_NEW_SAMPLE),
+                ContextCompat.RECEIVER_NOT_EXPORTED
+            )
+        } catch (_: Exception) { /* 注册失败则本页电量/采样刷新走不到，但不影响其它功能 */ }
         // v1.9：回到前台且正在监测时，恢复前台保底采样循环
         if (monitoring) {
             fgHandler.removeCallbacks(fgRunnable)
@@ -357,10 +382,12 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun readPct(): Pair<Int, Boolean> {
-        val intent = ContextCompat.registerReceiver(
-            this, null, IntentFilter(Intent.ACTION_BATTERY_CHANGED),
-            ContextCompat.RECEIVER_NOT_EXPORTED
-        ) ?: return 0 to false
+        val intent = try {
+            ContextCompat.registerReceiver(
+                this, null, IntentFilter(Intent.ACTION_BATTERY_CHANGED),
+                ContextCompat.RECEIVER_NOT_EXPORTED
+            )
+        } catch (_: Exception) { null } ?: return 0 to false
         val level = intent.getIntExtra(BatteryManager.EXTRA_LEVEL, -1)
         val scale = intent.getIntExtra(BatteryManager.EXTRA_SCALE, -1)
         val pct = if (level >= 0 && scale > 0) level * 100 / scale else 0
@@ -371,10 +398,12 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun readTemp(): Float {
-        val intent = ContextCompat.registerReceiver(
-            this, null, IntentFilter(Intent.ACTION_BATTERY_CHANGED),
-            ContextCompat.RECEIVER_NOT_EXPORTED
-        ) ?: return 0f
+        val intent = try {
+            ContextCompat.registerReceiver(
+                this, null, IntentFilter(Intent.ACTION_BATTERY_CHANGED),
+                ContextCompat.RECEIVER_NOT_EXPORTED
+            )
+        } catch (_: Exception) { null } ?: return 0f
         val raw = intent.getIntExtra(BatteryManager.EXTRA_TEMPERATURE, 0)
         return raw / 10.0f
     }
