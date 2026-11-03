@@ -13,9 +13,11 @@
 指引，不会报错。采集 App 确定后（麦克风录音 + 加速度计记录），把同名
 .wav/.csv 成对放入 raw_data/工况*/ 即可直接跑。
 
-加速度 CSV 兼容两种布局：无表头时前 3 列为 ax,ay,az；含表头时按列名匹配
-ax/ay/az，并允许首列为时间戳（t,ax,ay,az，与实验方案「含时间戳」一致）。
-运行 `python selftest.py` 可用合成样本一键验证音频+加速度特征提取管线。
+加速度 CSV 按列名匹配 ax/ay/az，兼容多种布局：无表头时前 3 列为
+ax,ay,az；含表头时按列名定位（如实验方案「含时间戳」``t,ax,ay,az``，或
+采集 App 实际导出的 ``ax,ay,az,t_ns,battery_pct,temp_c``，多出的时间戳/
+电量/温度列会被自动忽略）。运行 `python selftest.py` 可用合成样本一键
+验证音频+加速度特征提取管线。
 """
 
 import argparse
@@ -84,9 +86,10 @@ def accel_features(csv_path: str) -> Optional[Dict[str, float]]:
     """提取单个加速度 CSV 的三轴时域/频域特征。
 
     Args:
-        csv_path: CSV 文件路径。支持两种布局：无表头时前 3 列为
-            ax,ay,az；含表头时按列名匹配 ax/ay/az（允许首列为时间戳，
-            如 ``t,ax,ay,az``，与实验方案「含时间戳」一致）。
+        csv_path: CSV 文件路径。按列名匹配 ax/ay/az，兼容多种布局：
+            无表头时前 3 列为 ax,ay,az；含表头时按列名定位（如实验方案
+            ``t,ax,ay,az``，或采集 App 实际导出 ``ax,ay,az,t_ns,
+            battery_pct,temp_c``，多出的时间戳/电量/温度列自动忽略）。
 
     Returns:
         特征名字典（键如 acc_x_rms/acc_mag_rms）；读取失败或数据为空时
