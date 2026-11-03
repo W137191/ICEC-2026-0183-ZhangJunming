@@ -471,6 +471,30 @@
 - 验证建议：① 先亮屏开窗测 10 分钟看是否出 5/10min（确认采样链本身正常）；② 再加白名单后熄屏测
   15 分钟看是否补出 15/20min；③ 仍停在 0min 即确认系统冻结，回看白名单三步是否漏做
 
+### 9.14 v1.9.1 平板适配（2026-11-03 晚，华为平板 MRX-W09 作项目三/课题06 采集设备）
+- 背景：项目三真机启动后，用户改用**华为平板 MRX-W09** 作为声振采集（项目三）+ 噪声测量（课题06）
+  的**测试设备**，iQOO 13 仅作拍照记录设备。原 App 仅在 iQOO 13 手机验证过（竖屏锁定）。
+- 适配改动（不触碰已验证的采集管线，纯增量、对手机路径无回归）：
+  1. **解除竖屏锁 + 旋转不中断采集**：`MainActivity` / `SensingActivity` / `NoiseActivity` 三个
+     Activity 去掉 `android:screenOrientation="portrait"`，改为
+     `android:configChanges="orientation|screenSize|keyboardHidden"`。
+     平板可横屏使用宽屏；旋转时 Activity 不重建、`onPause` 不触发，故 10 秒声振采集 /
+     课题06 噪声测量**不会因旋转被中断丢弃**（手机端旋转同样受益，且受 configChanges 保护）。
+  2. **硬件特性声明为非必需**：Manifest 新增
+     `<uses-feature android:name="android.hardware.microphone" android:required="false" />`
+     与 `android.hardware.sensor.accelerometer` 同样 `required="false"`。
+     即使设备未报告某硬件也能安装，代码已对 `null` 传感器与音频缺失做兜底（华为平板无 GMS，
+     但跑的是标准 Android API，无 GMS 依赖，可直接装）。
+  3. **文案去"手机"化**：采集/噪声页写死的"手机贴紧设备""手机静置""手机麦克风未校准"等改为
+     "本机贴紧被测设备""本机静置""本机麦克风未校准"，适配平板作为录制设备的场景。
+  4. versionCode 10→11 / versionName 1.9→1.9.1（标记平板适配构建；统一 debug 签名，平板/手机均可覆盖安装）。
+- **未改** `MonitorService` / 精确闹钟 / 电池优化白名单等课题02 逻辑——平板仅用于项目三/课题06，
+  不跑后台电量监测，故不涉及。
+- 华为平板注意事项（用户侧）：① HarmonyOS 需开启「设置→安全→更多安全设置→安装未知应用」
+  允许来源后再装 APK；② 平板麦克风位置与手机不同，采集时把平板麦克风一侧贴近被测设备；
+  ③ 若平板为 HarmonyOS NEXT（纯鸿蒙、无 Android 兼容层）则无法运行 Android APK，
+  但 MRX-W09 为 Android 兼容层机型，可正常安装。
+
 ---
 
 ## 10. 常用命令速查
