@@ -22,7 +22,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
-            android:text="替代市面分贝仪：直接导出 dB 时间序列 CSV，可复算、可归档；测量时手机静置"
+            android:text="替代市面分贝仪：直接导出 dB 时间序列 CSV，可复算、可归档；测量时本机静置"
             android:textColor="@color/text_dim"
             android:textSize="13sp" />
 
@@ -159,7 +159,7 @@
             android:layout_marginTop="16dp"
             android:background="@color/panel"
             android:padding="10dp"
-            android:text="文件保存在 Android/data/com.example.batteryheatmonitor/files/Download/Noise/。dB 为手机麦克风未校准的相对声压级（公式 20*log10(rms/32767)+90），同一设备横向对比有效；市面消费级分贝仪同样未校准，但本方案可导出全量原始数据、可复算。"
+            android:text="文件保存在 Android/data/com.example.batteryheatmonitor/files/Download/Noise/。dB 为本机麦克风未校准的相对声压级（公式 20*log10(rms/32767)+90），同一设备横向对比有效；市面消费级分贝仪同样未校准，但本方案可导出全量原始数据、可复算。"
             android:textColor="@color/white"
             android:textSize="13sp" />
 

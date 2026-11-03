@@ -151,7 +151,7 @@ class NoiseActivity : AppCompatActivity() {
         measuring = true
         btnStart.isEnabled = false
         pbLevel.progress = 0
-        tvResult.text = "测量中… 手机静置、屏幕常亮，勿挡住底部麦克风"
+        tvResult.text = "测量中… 本机静置、屏幕常亮，勿挡住麦克风"
 
         Thread {
             val minBuf = AudioRecord.getMinBufferSize(SR, CHANNEL, FORMAT)

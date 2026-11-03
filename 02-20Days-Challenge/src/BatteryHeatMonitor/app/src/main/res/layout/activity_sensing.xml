@@ -22,7 +22,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
-            android:text="手机贴紧设备外壳，录 10 秒麦克风音频 + 加速度计振动；自动成对存 WAV/CSV"
+            android:text="将本机贴紧被测设备外壳，录 10 秒麦克风音频 + 加速度计振动；自动成对存 WAV/CSV"
             android:textColor="@color/text_dim"
             android:textSize="13sp" />
 

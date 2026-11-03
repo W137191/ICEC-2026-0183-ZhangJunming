@@ -206,7 +206,7 @@ class SensingActivity : AppCompatActivity() {
         recording = true
         btnCapture.isEnabled = false
         pbLevel.progress = 0
-        tvResult.text = "采集中… 保持手机贴紧设备、屏幕常亮"
+        tvResult.text = "采集中… 保持本机贴紧被测设备、屏幕常亮"
 
         Thread {
             val pcm = ByteArrayOutputStream()
