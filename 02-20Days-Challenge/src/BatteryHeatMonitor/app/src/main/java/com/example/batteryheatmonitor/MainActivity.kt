@@ -24,6 +24,7 @@ import androidx.core.content.ContextCompat
 import com.example.batteryheatmonitor.sensing.SensingActivity
 import com.example.batteryheatmonitor.ui.LineChartView
 import com.example.batteryheatmonitor.util.CsvExporter
+import java.io.File
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -109,7 +110,7 @@ class MainActivity : AppCompatActivity() {
         val shown = if (text.length > 4000) text.take(4000) + "\n…(已截断，完整内容见文件)" else text
         AlertDialog.Builder(this)
             .setTitle("上次崩溃记录（请把内容发我定位）")
-            .setMessage(shown)
+            .setMessage(shown as CharSequence)
             .setCancelable(false)
             .setPositiveButton("知道了") { d, _ -> d.dismiss(); finish() }
             .show()
