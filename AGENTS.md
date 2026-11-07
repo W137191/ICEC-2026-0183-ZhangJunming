@@ -512,6 +512,19 @@
 - 平板验证建议：覆盖安装 1.9.2；若仍崩，弹窗会直接显示异常类名+信息，**把那段文字发回即可精准定位**
   （无需 adb logcat）。
 
+### 9.16 v1.9.3 声振/噪声采集完成时崩溃（CalledFromWrongThreadException，2026-11-07）
+- 现象：平板（HarmonyOS 4.2.0，≈Android 12）覆盖安装 1.9.2 后，**声振采集（`SensingActivity`）跑满 10 秒、采集完成时崩溃**，弹系统"发热掉电监测 屡次停止运行"；内置崩溃自检器弹窗正确捕获并显示堆栈：
+  `android.view.ViewRootImpl$CalledFromWrongThreadException: Only the original thread that created a view hierarchy can touch its views`，
+  堆栈顶 `SensingActivity.startCapture$lambda$20(SensingActivity.kt:284)`，线程 `Thread-4`，时间 2026-11-07 19:10:50。
+  `NoiseActivity`（噪声测量）存在**同构隐患**（line 216），手机端（Android 14/15）对该检查较宽松未崩，平板（Android 12）严格检查而崩——属 API 级别差异，与 9.15 同源。
+- 根因：`startCapture` 在 UI 线程先 `window.addFlags(FLAG_KEEP_SCREEN_ON)`，但后续采集逻辑整体跑在后台 `Thread { }` 里；采集结束（成功路径原 line 284 / 中断路径原 line 258）以及 `NoiseActivity` 测量结束（原 line 216）在**后台线程**直接调用 `window.clearFlags(FLAG_KEEP_SCREEN_ON)`。`Window.setFlags/clearFlags` 会触发 `onWindowAttributesChanged`，触碰 View 体系，Android 规定只有创建 View 的"原始线程"（主线程）能碰 View，后台线程触碰即抛此异常。
+- 修复（不改动已验证的采集管线与 `addFlags` 位置，`addFlags` 本就在 `Thread` 块之前的主线程，无需动）：
+  1. `SensingActivity.kt` 成功路径（原 line 284）与中断路径（原 line 258）的
+     `window.clearFlags(FLAG_KEEP_SCREEN_ON)` 各自包进 `runOnUiThread { }`，回到主线程执行。
+  2. `NoiseActivity.kt` 测量结束（原 line 216）同样包进 `runOnUiThread { }`。
+  3. versionCode 12→13 / versionName 1.9.2→1.9.3。
+- 平板验证建议：覆盖安装 1.9.3；声振采集完整跑完 10 秒应正常显示"已保存"、不再弹系统崩溃框；噪声测量同理。若再崩，自检器弹窗文本发回定位（无需 adb logcat）。
+
 ---
 
 ## 10. 常用命令速查
