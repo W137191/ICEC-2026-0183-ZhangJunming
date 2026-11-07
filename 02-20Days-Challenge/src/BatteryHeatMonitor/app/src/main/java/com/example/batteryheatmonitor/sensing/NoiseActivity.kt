@@ -213,7 +213,9 @@ class NoiseActivity : AppCompatActivity() {
             val elapsedS = (System.currentTimeMillis() - startMs) / 1000
             measuring = false
             wakeLock?.let { if (it.isHeld) it.release() }
-            window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+            runOnUiThread {
+                window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+            }
 
             if (!failed && cnt > 0) {
                 // 部分测量也保留：均值/峰值对更短窗口依然成立，中止事实写进索引备注

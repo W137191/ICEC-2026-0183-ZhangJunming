@@ -255,7 +255,9 @@ class SensingActivity : AppCompatActivity() {
                 csvFile.delete()
                 if (accel != null) sm.unregisterListener(listener)
                 wakeLock?.let { if (it.isHeld) it.release() }
-                window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                runOnUiThread {
+                    window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                }
                 runOnUiThread {
                     btnCapture.isEnabled = true
                     tvCountdown.text = "已中断"
@@ -281,7 +283,9 @@ class SensingActivity : AppCompatActivity() {
 
             if (accel != null) sm.unregisterListener(listener)
             wakeLock?.let { if (it.isHeld) it.release() }
-            window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+            runOnUiThread {
+                window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+            }
             recording = false
             lastWav = wavFile; lastCsv = csvFile
             runOnUiThread {
