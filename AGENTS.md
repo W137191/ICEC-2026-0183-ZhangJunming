@@ -183,7 +183,8 @@
   走 upstream（即 newrepo）不会错；**切勿手写 `git push origin`**：2026-11-09 用户已在网页
   把 `symmetrical-train` 默认分支切到 `资源` 并**删除 `main`**（误推的课程提交 `26f3360` 已清除），
   此时若再 `git push origin main` 会**重新创建 main 并再次把课程推回游戏仓**——比误推更隐蔽，
-  务必杜绝（见 9.5）。建议直接 `git remote remove origin` 永久消除这个 footgun。
+  务必杜绝（见 9.5）。**已于 2026-11-09 执行 `git remote remove origin`** 永久消除这个 footgun——课程仓现仅余
+  `newrepo` 一个远程，误操作通道已物理切断。
 - **没有 gh CLI**；GitHub API 只读操作用 `curl --ssl-no-revoke`。
 - **代理故障（CONNECT 502）时**：提交已安全留在本地，不要连续重试轰炸；告知用户待代理恢复，
   或请用户在网络正常环境执行 `git push newrepo main`；恢复后先 `git log newrepo/main..HEAD`
@@ -339,8 +340,8 @@
 - 本地执行 `git remote prune origin`：清理掉过期的 `origin/main`、`origin/master` 跟踪引用
   （`origin/资源` 保留）。`origin/HEAD` 变 dangling 属正常。
 - 教训固化（见 6 节远程提醒）：现 `git push origin main` 会**重新创建 main** 并把课程再次推回
-  游戏仓，比当初误推更隐蔽；已在 6 节与 9.5 加强警告，并建议 `git remote remove origin` 彻底消除
-  footgun。
+  游戏仓，比当初误推更隐蔽；已在 6 节与 9.5 加强警告，并于 **2026-11-09 执行 `git remote remove
+  origin`** 彻底消除 footgun——课程仓现仅余 `newrepo` 一个远程，误操作通道已物理切断。
 - **课程仓 `ICEC` 的全部实质工作（阶段一/二）均已完成并推送 `newrepo`，ahead 0**。课程相关收尾
   仅剩：① 用户实拍盲测录屏 `盲测录屏_YYYYMMDD.mp4` 入 `报告/`；② 可选放开 sklearn 升级随机森林。
 
