@@ -179,9 +179,11 @@
   Release 读报错再修。
 - git 环境：git 2.55，全局身份已配置；`github.com` 经本地代理，API 访问 curl 需 `--ssl-no-revoke`。
 - **两个远程别推错**：`newrepo` = 课程主仓 `ICEC-2026-0183-ZhangJunming`（唯一有效目标）；
-  `origin` = 旧仓库 `symmetrical-train`（2026-10-22 迁移前保留，勿再推）。裸 `git push`
-  走 upstream（即 newrepo）不会错；**切勿手写 `git push origin`**（2026-10-25 误推过一次，
-  见 9.5）。
+  `origin` = 旧仓库 `symmetrical-train`（游戏仓，仅保留 fetch 用）。裸 `git push`
+  走 upstream（即 newrepo）不会错；**切勿手写 `git push origin`**：2026-11-09 用户已在网页
+  把 `symmetrical-train` 默认分支切到 `资源` 并**删除 `main`**（误推的课程提交 `26f3360` 已清除），
+  此时若再 `git push origin main` 会**重新创建 main 并再次把课程推回游戏仓**——比误推更隐蔽，
+  务必杜绝（见 9.5）。建议直接 `git remote remove origin` 永久消除这个 footgun。
 - **没有 gh CLI**；GitHub API 只读操作用 `curl --ssl-no-revoke`。
 - **代理故障（CONNECT 502）时**：提交已安全留在本地，不要连续重试轰炸；告知用户待代理恢复，
   或请用户在网络正常环境执行 `git push newrepo main`；恢复后先 `git log newrepo/main..HEAD`
@@ -328,6 +330,19 @@
 - **阶段一封面 `01-Field-Discovery/REPORT.md` 状态改"已完成"**：两项课题数据表/同框照
   （课题02 10 张、课题06 20 张）/图表（折线图·雷达图 SVG+HTML）/改进方案/反思 全部齐备并勾选。
 - `fft_features.py train`（随机森林）仍为 TODO（项目锁定零依赖 numpy，待放开 sklearn 升级）。
+
+### 8.2 进度更新（2026-11-09 晚）：symmetrical-train 误推分支清理完成
+
+- 用户已在 GitHub 网页把 `W137191/symmetrical-train` 默认分支从 `main` 切到 `资源`，并**删除
+  `main` 分支**。远端现状：`资源`（默认，游戏内容 `99dcbe0`）、`psapk`；误推的课程提交
+  `26f3360` 已从远端清除；早前误推的 4 个标签（apk-latest/ci-build-log/v1.4.0/AIPS）此前已删。
+- 本地执行 `git remote prune origin`：清理掉过期的 `origin/main`、`origin/master` 跟踪引用
+  （`origin/资源` 保留）。`origin/HEAD` 变 dangling 属正常。
+- 教训固化（见 6 节远程提醒）：现 `git push origin main` 会**重新创建 main** 并把课程再次推回
+  游戏仓，比当初误推更隐蔽；已在 6 节与 9.5 加强警告，并建议 `git remote remove origin` 彻底消除
+  footgun。
+- **课程仓 `ICEC` 的全部实质工作（阶段一/二）均已完成并推送 `newrepo`，ahead 0**。课程相关收尾
+  仅剩：① 用户实拍盲测录屏 `盲测录屏_YYYYMMDD.mp4` 入 `报告/`；② 可选放开 sklearn 升级随机森林。
 
 ---
 
