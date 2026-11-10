@@ -16,6 +16,11 @@ desktop.ini
 __pycache__/
 *.pyc
 
+# ===== 机器学习模型产物（训练出的权重，非源，勿提交） =====
+*.joblib
+*.pkl
+rf_model.joblib
+
 # ===== 大文件与临时文件 =====
 *.tmp
 *.log
