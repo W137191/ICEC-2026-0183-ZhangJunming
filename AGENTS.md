@@ -17,9 +17,8 @@
 ```
 ├── 01-Field-Discovery/        # 阶段一：基础素养实地测评（课题02 手机发热 + 课题06 噪声地图）
 │   ├── 报告/ raw_data/ photos/
-├── 02-20Days-Challenge/       # 阶段二：工坊项目挑战营（项目三 声振诊断为主，项目一 ESP32 为候补）
+├── 02-20Days-Challenge/       # 阶段二：工坊项目挑战营（项目三 声振诊断）
 │   ├── 项目三-手机声振诊断/     #   README/实验方案/raw_data(5工况×15组)/src/fft_features.py/实验照/报告
-│   ├── 项目一-ESP32省电/        #   候补草稿
 │   ├── process_logs/          #   ★连续多日过程日志（防摆拍硬要求）
 │   └── src/BatteryHeatMonitor/ #   自研安卓采集 App（Kotlin，CI 构建）
 ├── 03-AI-Collaboration/       # AI 协作关键对话存档（YYYY-MM-DD-关键词.md）
@@ -105,9 +104,6 @@
    → `02-20Days-Challenge/项目三-手机声振诊断/src/fft_features.py`
 3. **盲测视频 + 抗噪报告**：用特征代码对样本盲测并录像，报告写清抗噪思路
    → `02-20Days-Challenge/项目三-手机声振诊断/报告/`
-
-候补**项目一 ESP32-CAM 省电**仅当项目三因设备/数据不可行时启用（需向 426 工坊借设备），
-评分点：电流对比照/视频、24h+ 功耗 CSV、功耗模型 + 状态机。
 
 ### 4.3 过程数据（防摆拍，评委按连续性审查）
 
