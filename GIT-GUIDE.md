@@ -44,18 +44,20 @@ git config --global user.email "你的常用邮箱"
 > 国内访问 GitHub 不稳定时，用 Gitee 平替：gitee.com → 右上角 **+** → 新建仓库 → 同名 → 公开 → 创建。
 > 后续命令里的地址换成 Gitee 的即可，其他操作完全一样。
 
-## 五、关联远程并首次推送（一次性）
+## 五、关联课程主仓并首次推送（一次性）
 
-本仓库已经在本地初始化好了，你只需要：
+本仓库远程名是 `newrepo`；**不要**再添加 `origin`（旧游戏仓 `symmetrical-train` 的远程已删除）。
+若本地尚未配置远程，执行：
 
 ```bash
 cd /d/zjm/ICEC-2026-0183-Zhangjunming        # 进入仓库（Git Bash 路径写法）
-git remote add origin https://github.com/W137191/ICEC-2026-0183-Zhangjunming.git
-git push -u origin main
+git remote add newrepo https://github.com/W137191/ICEC-2026-0183-Zhangjunming.git
+git push -u newrepo main
 ```
 
-- `-u` 只加一次：记住「本地 main ↔ 远程 main」的对应关系，之后推送直接 `git push`
+- `-u` 只加一次：记住「本地 main ↔ newrepo/main」的对应关系，之后裸 `git push` 即可
 - 中途弹出 GitHub 登录窗，按提示授权；若要求密码，见第七节 token
+- **禁止手写 `git push origin` / `git pull origin`**：会重新打通已删除的游戏仓通道
 
 > 以后在别的电脑上拿这个仓库，用 `git clone <仓库地址>`，不需要再 `git init`。
 
@@ -83,7 +85,7 @@ git push                                # 4. 推送到 GitHub
 
 | 报错 / 现象 | 原因 | 解决 |
 | --- | --- | --- |
-| `! [rejected] ... failed to push` | 远程有你没有的提交（常见于在网页端改过文件） | 先 `git pull --rebase origin main`，再 `git push` |
+| `! [rejected] ... failed to push` | 远程有你没有的提交（常见于在网页端改过文件） | 先 `git pull --rebase newrepo main`，再 `git push` |
 | `Support for password authentication was removed` / 403 | GitHub 2021 年起不支持账号密码推送 | 用 Personal Access Token 代替密码：GitHub → Settings → Developer settings → Personal access tokens → Tokens (classic) → Generate new token → 勾选 `repo` → 复制；push 时用户名填 GitHub 用户名，密码处粘贴 token |
 | push 卡住 / 超时 | 网络不通畅 | 换 Gitee 仓库，或检查代理 |
 | `fatal: not a git repository` | 当前目录不是仓库 | 先 `cd` 进仓库文件夹再执行命令 |

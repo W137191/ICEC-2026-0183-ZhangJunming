@@ -61,7 +61,8 @@
 > 评分项② FFT 特征代码已验证（`python src/selftest.py` 一键通过，见第六节）。下列①与③**必须真机实测，AI 无法代采**。
 
 ### 5.1 第一步：装 App
-- 下载 GitHub Release `apk-latest` 的 `app-debug.apk`（阶段一自研 App，v1.6：麦克风 16kHz WAV + 加速度计 ~100Hz CSV，组号自动递增）。
+- 下载 GitHub Release `apk-latest` 的 `app-debug.apk`（阶段一自研 App，最终 v1.9.3 / versionCode 13：
+  麦克风 16kHz WAV + 加速度计 ~100Hz CSV，组号自动递增；平板适配与采集崩溃修复已定稿）。
 - 安装到 iQOO 13，授予麦克风 / 存储权限。
 
 ### 5.2 第二步：铺满 75 组（5 工况 × 15 组）
@@ -77,7 +78,8 @@
 75 组采齐后运行 `python src/fft_features.py extract`，生成 `raw_data/features.csv`，确认音频/加速度特征均正常（逻辑同 selftest）。
 
 ### 5.5 第五步：盲测视频 + 抗噪报告（评分项③）
-- 另取若干未参与训练的组，训练基线分类器（`fft_features.py train`，待实数据补全）→ 录屏预测过程与结果存 `报告/`。
+- 已按分层抽样完成盲测：主分类器 `fft_features.py train` 与零依赖基线 `blindtest.py` 均已实装，
+  录屏预测过程与结果见 `报告/盲测与抗噪报告.md`、`报告/盲测录屏_20261115.mp4`。
 - 在背景人声 / 风声下重测部分组，对比信噪比下降后准确率，给滤波 / 加窗改进结论。
 - 报告已填充（真实数值）：见 `报告/盲测与抗噪报告.md`；盲测分析脚本见 `src/blindtest.py`（零依赖 numpy，分层抽样盲测 + LOOCV + 噪声注入抗噪扫描）。
 
