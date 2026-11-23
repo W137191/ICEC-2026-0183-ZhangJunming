@@ -50,7 +50,10 @@
 - commit 前自查：`git status && git diff --cached`。
 
 ### 3.4 Markdown 与媒体文件
-- 报告里嵌图片/视频**必须用相对路径**：`![](../photos/课题06/xxx.jpg)`——绝对路径和 `file:///` 在 GitHub 上是坏链。
+- 报告里嵌图片/视频**必须用相对路径**。层级从**报告所在目录**算起：报告在
+  `01-Field-Discovery/报告/`、图片在 `01-Field-Discovery/photos/`，故写 `../photos/…`（上一级），
+  例如 `../photos/课题06/课题06-午1419-本人同框-图书馆A区书架.jpg`（真实文件，已验证）。
+  绝对路径和 `file:///` 在 GitHub 上是坏链。
 - 视频一律转 **H.264**（`-crf23 -pix_fmt yuv420p -movflags +faststart`）再提交，GitHub 不支持
   HEVC。
 - 改完嵌入路径要全仓验证一遍链接有效。
