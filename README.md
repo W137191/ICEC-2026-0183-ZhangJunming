@@ -8,7 +8,7 @@
 | 项目 | 内容 |
 | --- | --- |
 | 姓名 | Zhangjunming |
-| 学号 | （暂不公开） |
+| 学号 | 20261040183 |
 | 学校 | 深圳城市职业学院 |
 | 专业 / 年级 | 人工智能技术应用C3 / 2026 级 |
 | 技术栈 / 兴趣 | Kotlin / Android（自研采集 App）、Python + numpy / scikit-learn（FFT 特征与分类）、Git / GitHub Actions（过程留痕与 CI）、数据可视化 |
